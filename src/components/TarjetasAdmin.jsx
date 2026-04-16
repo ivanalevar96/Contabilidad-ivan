@@ -71,7 +71,7 @@ export default function TarjetasAdmin({ f }) {
             <input type="file" accept="application/json" className="hidden" onChange={importJson} />
           </label>
           <button className="btn-danger" onClick={() => { if (confirm('Borrar TODOS los datos?')) f.resetAll(); }}>Reset completo</button>
-          <span className="text-xs text-slate-400 ml-auto">Todo se guarda en tu navegador (localStorage)</span>
+          <span className="text-xs text-slate-400 ml-auto">Datos sincronizados en la nube</span>
         </div>
       </section>
     </div>

@@ -1,6 +1,6 @@
 import { addMonths, monthLabel } from '../utils/format';
 
-export default function TopBar({ view, setView, ym, setYM, year, setYear }) {
+export default function TopBar({ view, setView, ym, setYM, year, setYear, user, onSignOut }) {
   return (
     <header className="sticky top-0 z-20 bg-ink/80 backdrop-blur border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
@@ -48,6 +48,13 @@ export default function TopBar({ view, setView, ym, setYM, year, setYear }) {
             <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value) || year)}
               className="input w-24 text-center" />
             <button className="btn-ghost" onClick={() => setYear(year + 1)}>→</button>
+          </div>
+        )}
+
+        {user && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 hidden sm:inline truncate max-w-[150px]">{user.email}</span>
+            <button onClick={onSignOut} className="btn-ghost text-xs" title="Cerrar sesión">Salir</button>
           </div>
         )}
       </div>
