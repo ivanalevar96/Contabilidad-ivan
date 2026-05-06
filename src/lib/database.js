@@ -74,6 +74,7 @@ export async function loadAllData(userId) {
     nombre: t.nombre,
     tipo: t.tipo,
     color: t.color,
+    archivada: !!t.archivada,
   }));
 
   // Sueldos: filas → diccionario { 'YYYY-MM': { sueldo, ingresosExtra } }
@@ -103,7 +104,26 @@ export async function saveTarjeta(userId, t) {
     nombre: t.nombre,
     tipo: t.tipo,
     color: t.color,
+    archivada: !!t.archivada,
   });
+  if (error) throw error;
+}
+
+export async function archiveTarjetaDb(userId, id) {
+  const { error } = await supabase
+    .from('tarjetas')
+    .update({ archivada: true })
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function unarchiveTarjetaDb(userId, id) {
+  const { error } = await supabase
+    .from('tarjetas')
+    .update({ archivada: false })
+    .eq('id', id)
+    .eq('user_id', userId);
   if (error) throw error;
 }
 
@@ -121,6 +141,7 @@ export async function updateTarjetaDb(userId, id, patch) {
   if (patch.nombre != null) updates.nombre = patch.nombre;
   if (patch.tipo != null) updates.tipo = patch.tipo;
   if (patch.color != null) updates.color = patch.color;
+  if (patch.archivada != null) updates.archivada = !!patch.archivada;
 
   const { error } = await supabase
     .from('tarjetas')

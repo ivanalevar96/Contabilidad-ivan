@@ -12,8 +12,11 @@ create table public.tarjetas (
   nombre     text not null,
   tipo       text not null check (tipo in ('tarjeta', 'persona')),
   color      text not null default '#64748b',
+  archivada  boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+create index tarjetas_user_archivada_idx on public.tarjetas (user_id, archivada);
 
 alter table public.tarjetas enable row level security;
 

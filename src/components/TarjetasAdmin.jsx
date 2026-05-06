@@ -6,6 +6,10 @@ export default function TarjetasAdmin({ f }) {
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('tarjeta');
   const [color, setColor] = useState(COLORS[0]);
+  const [mostrarArchivadas, setMostrarArchivadas] = useState(false);
+
+  const activas = f.state.tarjetas.filter((t) => !t.archivada);
+  const archivadas = f.state.tarjetas.filter((t) => t.archivada);
 
   const add = (e) => {
     e.preventDefault();
@@ -38,7 +42,7 @@ export default function TarjetasAdmin({ f }) {
       <section className="card p-5">
         <h2 className="text-base font-semibold mb-3">Tarjetas y cuentas</h2>
         <div className="grid gap-2">
-          {f.state.tarjetas.map((t) => (
+          {activas.map((t) => (
             <div key={t.id} className="flex items-center gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
               <input type="color" value={t.color || '#64748b'} onChange={(e) => f.updateTarjeta(t.id, { color: e.target.value })} className="h-7 w-10 rounded bg-transparent" />
               <input className="input" value={t.nombre} onChange={(e) => f.updateTarjeta(t.id, { nombre: e.target.value })} />
@@ -46,9 +50,12 @@ export default function TarjetasAdmin({ f }) {
                 <option value="tarjeta">Tarjeta</option>
                 <option value="persona">Persona</option>
               </select>
-              <button className="btn-danger" onClick={() => { if (confirm(`Eliminar "${t.nombre}" y todas sus compras?`)) f.removeTarjeta(t.id); }}>Eliminar</button>
+              <button className="btn-ghost" onClick={() => { if (confirm(`Archivar "${t.nombre}"? Dejará de ofrecerse para nuevas compras pero el historial se conserva.`)) f.archiveTarjeta(t.id); }}>Archivar</button>
             </div>
           ))}
+          {activas.length === 0 && (
+            <div className="text-sm text-slate-400">No tienes tarjetas activas. Agrega una abajo.</div>
+          )}
         </div>
 
         <form onSubmit={add} className="mt-4 grid sm:grid-cols-[1fr_140px_auto_auto] gap-2">
@@ -61,6 +68,31 @@ export default function TarjetasAdmin({ f }) {
           <button className="btn-primary" type="submit">Agregar</button>
         </form>
       </section>
+
+      {archivadas.length > 0 && (
+        <section className="card p-5">
+          <button
+            className="w-full flex items-center justify-between text-base font-semibold mb-3"
+            onClick={() => setMostrarArchivadas((v) => !v)}
+            type="button"
+          >
+            <span>Archivadas ({archivadas.length})</span>
+            <span className="text-slate-400 text-sm">{mostrarArchivadas ? '▲ ocultar' : '▼ mostrar'}</span>
+          </button>
+          {mostrarArchivadas && (
+            <div className="grid gap-2">
+              {archivadas.map((t) => (
+                <div key={t.id} className="flex items-center gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 opacity-75">
+                  <span className="h-7 w-10 rounded" style={{ background: t.color || '#64748b' }} />
+                  <span className="flex-1 text-slate-300">{t.nombre}<span className="text-slate-500 text-xs ml-2">{t.tipo === 'persona' ? 'persona' : 'tarjeta'}</span></span>
+                  <button className="btn-ghost" onClick={() => f.unarchiveTarjeta(t.id)}>Restaurar</button>
+                  <button className="btn-danger" onClick={() => { if (confirm(`Eliminar definitivamente "${t.nombre}" y TODO su historial de compras y pagos? Esta acción no se puede deshacer.`)) f.removeTarjeta(t.id); }}>Eliminar definitivo</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="card p-5">
         <h2 className="text-base font-semibold mb-3">Datos</h2>
