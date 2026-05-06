@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PersonasAdmin from './PersonasAdmin';
 
 const COLORS = ['#fb7185', '#f59e0b', '#a78bfa', '#34d399', '#22d3ee', '#f472b6', '#60a5fa', '#facc15', '#94a3b8'];
 
@@ -93,6 +94,8 @@ export default function TarjetasAdmin({ f }) {
           )}
         </section>
       )}
+
+      <PersonasAdmin f={f} />
 
       <section className="card p-5">
         <h2 className="text-base font-semibold mb-3">Datos</h2>

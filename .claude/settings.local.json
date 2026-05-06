@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(ls node_modules/@supabase 2>&1 | head -3; ls /c/Users/admin/Desktop/finanzas-app/node_modules/@supabase 2>&1 | head -3)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git push *)"
+    ]
+  }
+}

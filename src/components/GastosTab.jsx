@@ -4,10 +4,23 @@ import CompraForm from './CompraForm';
 import PagoPuntualForm from './PagoPuntualForm';
 import { fmt } from '../utils/format';
 
-export default function GastosTab({ ym, f, resumen, tarjetasActivas }) {
+export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = [] }) {
   const [mode, setMode] = useState(null); // null | 'compra' | 'pago'
+  const [editing, setEditing] = useState(null); // compra en edición
   const [filterTarjeta, setFilterTarjeta] = useState('');
   const [search, setSearch] = useState('');
+
+  const startEdit = (c) => {
+    setMode(null);
+    setEditing(c);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const submitEdit = (patch) => {
+    if (!editing) return;
+    f.updateCompra(editing.id, patch);
+    setEditing(null);
+  };
 
   const bloques = useMemo(() => {
     let arr = Object.values(resumen.porTarjeta);
@@ -59,10 +72,20 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas }) {
         </div>
       </section>
 
-      {mode === 'compra' && (
-        <CompraForm tarjetas={tarjetasActivas} mesInicio={ym} onAdd={f.addCompra} onClose={() => setMode(null)} />
+      {editing && (
+        <CompraForm
+          tarjetas={tarjetasActivas}
+          personas={personas}
+          mesInicio={editing.mesInicio || ym}
+          onAdd={submitEdit}
+          onClose={() => setEditing(null)}
+          initial={editing}
+        />
       )}
-      {mode === 'pago' && (
+      {!editing && mode === 'compra' && (
+        <CompraForm tarjetas={tarjetasActivas} personas={personas} mesInicio={ym} onAdd={f.addCompra} onClose={() => setMode(null)} />
+      )}
+      {!editing && mode === 'pago' && (
         <PagoPuntualForm tarjetas={tarjetasActivas} mesYM={ym} onAdd={f.addPagoPuntual} onClose={() => setMode(null)} />
       )}
 
@@ -82,6 +105,8 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas }) {
               toggleRevisado={f.toggleRevisado}
               removeCompra={f.removeCompra}
               removePagoPuntual={f.removePagoPuntual}
+              onEditCompra={startEdit}
+              updateCompra={f.updateCompra}
             />
           ))
         )}

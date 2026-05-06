@@ -46,12 +46,12 @@ export default function MesView({ ym, f }) {
       )}
 
       {tab === 'gastos' && (
-        <GastosTab ym={ym} f={f} resumen={resumen} tarjetasActivas={tarjetasActivas} />
+        <GastosTab ym={ym} f={f} resumen={resumen} tarjetasActivas={tarjetasActivas} personas={f.state.personas || []} />
       )}
 
       {tab === 'compartidas' && (
         <div className="animate-fadein">
-          <ComprasCompartidas compartidas={resumen.compartidas} tarjetas={f.state.tarjetas} />
+          <ComprasCompartidas compartidas={resumen.compartidas} tarjetas={f.state.tarjetas} personas={f.state.personas || []} />
         </div>
       )}
     </div>

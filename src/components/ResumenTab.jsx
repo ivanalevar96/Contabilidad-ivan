@@ -16,12 +16,18 @@ export default function ResumenTab({ ym, f, resumen }) {
     .sort((a, b) => b.value - a.value);
 
   const topCompras = Object.values(resumen.porTarjeta)
-    .flatMap((b) => b.items.map((it) => ({
-      desc: it.compra?.descripcion || it.puntual?.descripcion,
-      monto: it.valorCuota,
-      tarjeta: b.tarjeta,
-      tipo: it.puntual ? 'puntual' : `${it.numCuota}/${it.compra.cantCuotas}`,
-    })))
+    .flatMap((b) => b.items.map((it) => {
+      let tipo;
+      if (it.puntual) tipo = 'puntual';
+      else if (it.compra.esSubscripcion) tipo = `subscripción · mes #${it.numCuota}`;
+      else tipo = `${it.numCuota}/${it.compra.cantCuotas}`;
+      return {
+        desc: it.compra?.descripcion || it.puntual?.descripcion,
+        monto: it.valorCuota,
+        tarjeta: b.tarjeta,
+        tipo,
+      };
+    }))
     .sort((a, b) => b.monto - a.monto)
     .slice(0, 5);
 

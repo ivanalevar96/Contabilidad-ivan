@@ -7,6 +7,7 @@ import {
   saveSueldo,
   saveCompra, deleteCompra,
   savePagoPuntual, deletePagoPuntual,
+  savePersona, deletePersona,
 } from './lib/database';
 import { supabase } from './lib/supabase';
 
@@ -26,11 +27,40 @@ const empty = () => ({
   sueldos: {},
   compras: [],
   pagosPuntuales: [],
+  personas: [],
 });
 
-/** Cuota aplicable a un mes YYYY-MM: retorna { numCuota, valorCuota } o null. */
+/** Cuota aplicable a un mes YYYY-MM: retorna { numCuota, valorCuota, periodo? } o null. */
 export function cuotaDelMes(compra, ym) {
-  if (!compra?.mesInicio) return null;
+  if (!compra) return null;
+  // Subscripción: itera períodos. Cada período es { inicio, fin? }.
+  // numCuota = nº acumulado de meses activos a través de todos los períodos hasta ym (inclusive).
+  if (compra.esSubscripcion) {
+    const periodos = Array.isArray(compra.periodos) && compra.periodos.length
+      ? compra.periodos
+      : (compra.mesInicio ? [{ inicio: compra.mesInicio, fin: compra.mesFin || null }] : []);
+    let acumulado = 0;
+    for (const p of periodos) {
+      if (!p?.inicio) continue;
+      const desdeInicio = monthsBetween(p.inicio, ym);     // ym - inicio
+      const hastaFin    = p.fin ? monthsBetween(ym, p.fin) : Infinity; // fin - ym
+      if (desdeInicio < 0) continue;       // ym < inicio: aún no entra a este período
+      if (hastaFin < 0) {                  // ym > fin: período ya cerró, suma su largo y sigue
+        acumulado += monthsBetween(p.inicio, p.fin) + 1;
+        continue;
+      }
+      // ym cae dentro de este período
+      acumulado += desdeInicio + 1;
+      return {
+        numCuota: acumulado,
+        valorCuota: Number(compra.valorCuota) || 0,
+        periodo: p,
+      };
+    }
+    return null;
+  }
+  // Compra en cuotas tradicional.
+  if (!compra.mesInicio) return null;
   const n = monthsBetween(compra.mesInicio, ym) + 1;
   if (n < 1 || n > (compra.cantCuotas || 0)) return null;
   return { numCuota: n, valorCuota: Number(compra.valorCuota) || 0 };
@@ -161,6 +191,9 @@ export function useFinanzas(userId) {
       esCompartida: false,
       divididaEntre: '',
       valorPorPersona: null,
+      esSubscripcion: false,
+      mesFin: null,
+      periodos: [],
       ...c,
       valorCuota: Math.round(valorCuota),
     };
@@ -173,7 +206,8 @@ export function useFinanzas(userId) {
       const newCompras = s.compras.map((c) => {
         if (c.id !== id) return c;
         const next = { ...c, ...patch };
-        if (patch.valorConInteres != null || patch.valorCompra != null || patch.cantCuotas != null) {
+        // Las subscripciones ignoran cantCuotas/valorCompra: su valorCuota se setea directo.
+        if (!next.esSubscripcion && (patch.valorConInteres != null || patch.valorCompra != null || patch.cantCuotas != null)) {
           const base = Number(next.valorConInteres || next.valorCompra || 0);
           next.valorCuota = Math.round(base / Math.max(1, Number(next.cantCuotas || 1)));
         }
@@ -215,6 +249,38 @@ export function useFinanzas(userId) {
   const removePagoPuntual = useCallback((id) => {
     setState((s) => ({ ...s, pagosPuntuales: s.pagosPuntuales.filter((p) => p.id !== id) }));
     sync(() => deletePagoPuntual(userIdRef.current, id));
+  }, [sync]);
+
+  // ---------- Personas ----------
+  const addPersona = useCallback((p) => {
+    const nueva = { id: crypto.randomUUID(), color: '#64748b', ...p };
+    setState((s) => ({ ...s, personas: [...s.personas, nueva].sort((a, b) => a.nombre.localeCompare(b.nombre)) }));
+    sync(() => savePersona(userIdRef.current, nueva));
+  }, [sync]);
+
+  const updatePersona = useCallback((id, patch) => {
+    setState((s) => ({
+      ...s,
+      personas: s.personas.map((p) => p.id === id ? { ...p, ...patch } : p).sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    }));
+    sync(() => {
+      const updated = { id, color: '#64748b', nombre: '', ...patch };
+      savePersona(userIdRef.current, updated);
+    });
+  }, [sync]);
+
+  const removePersona = useCallback((id) => {
+    setState((s) => ({
+      ...s,
+      personas: s.personas.filter((p) => p.id !== id),
+      // Limpia la persona de cualquier compra compartida donde apareciera
+      compras: s.compras.map((c) =>
+        Array.isArray(c.personasIds) && c.personasIds.includes(id)
+          ? { ...c, personasIds: c.personasIds.filter((pid) => pid !== id) }
+          : c
+      ),
+    }));
+    sync(() => deletePersona(userIdRef.current, id));
   }, [sync]);
 
   // ---------- Reset ----------
@@ -294,6 +360,7 @@ export function useFinanzas(userId) {
     addTarjeta, updateTarjeta, archiveTarjeta, unarchiveTarjeta, removeTarjeta,
     addCompra, updateCompra, removeCompra, toggleRevisado,
     addPagoPuntual, removePagoPuntual,
+    addPersona, updatePersona, removePersona,
     resetAll, importJson,
   };
 }
