@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { currentYM, monthsBetween, uid } from './utils/format';
+import { currentYM, monthsBetween, uid, addMonths } from './utils/format';
 import {
   loadAllData, migrateLocalStorage,
   saveTarjeta, updateTarjetaDb, deleteTarjeta,
+  archiveTarjetaDb, unarchiveTarjetaDb,
   saveSueldo,
   saveCompra, deleteCompra,
   savePagoPuntual, deletePagoPuntual,
+  savePersona, deletePersona,
 } from './lib/database';
 import { supabase } from './lib/supabase';
 
@@ -20,42 +22,48 @@ import { supabase } from './lib/supabase';
  * pagosPuntuales: [{ id, mesYM, tarjetaId, descripcion, monto }]
  */
 
-const DEFAULT_TARJETAS = [
-  { nombre: 'Tenpo',             tipo: 'tarjeta', color: '#fb7185' },
-  { nombre: 'Banco Estado',      tipo: 'tarjeta', color: '#f59e0b' },
-  { nombre: 'CMR Falabella',     tipo: 'tarjeta', color: '#a78bfa' },
-  { nombre: 'Línea Falabella',   tipo: 'tarjeta', color: '#34d399' },
-  { nombre: 'Debo a Cynthia',    tipo: 'persona', color: '#22d3ee' },
-  { nombre: 'Debo a Mamá',       tipo: 'persona', color: '#f472b6' },
-];
-
 const empty = () => ({
   tarjetas: [],
   sueldos: {},
   compras: [],
   pagosPuntuales: [],
+  personas: [],
 });
 
-/** Cuota aplicable a un mes YYYY-MM: retorna { numCuota, valorCuota } o null. */
+/** Cuota aplicable a un mes YYYY-MM: retorna { numCuota, valorCuota, periodo? } o null. */
 export function cuotaDelMes(compra, ym) {
-  if (!compra?.mesInicio) return null;
+  if (!compra) return null;
+  // Subscripción: itera períodos. Cada período es { inicio, fin? }.
+  // numCuota = nº acumulado de meses activos a través de todos los períodos hasta ym (inclusive).
+  if (compra.esSubscripcion) {
+    const periodos = Array.isArray(compra.periodos) && compra.periodos.length
+      ? compra.periodos
+      : (compra.mesInicio ? [{ inicio: compra.mesInicio, fin: compra.mesFin || null }] : []);
+    let acumulado = 0;
+    for (const p of periodos) {
+      if (!p?.inicio) continue;
+      const desdeInicio = monthsBetween(p.inicio, ym);     // ym - inicio
+      const hastaFin    = p.fin ? monthsBetween(ym, p.fin) : Infinity; // fin - ym
+      if (desdeInicio < 0) continue;       // ym < inicio: aún no entra a este período
+      if (hastaFin < 0) {                  // ym > fin: período ya cerró, suma su largo y sigue
+        acumulado += monthsBetween(p.inicio, p.fin) + 1;
+        continue;
+      }
+      // ym cae dentro de este período
+      acumulado += desdeInicio + 1;
+      return {
+        numCuota: acumulado,
+        valorCuota: Number(compra.valorCuota) || 0,
+        periodo: p,
+      };
+    }
+    return null;
+  }
+  // Compra en cuotas tradicional.
+  if (!compra.mesInicio) return null;
   const n = monthsBetween(compra.mesInicio, ym) + 1;
   if (n < 1 || n > (compra.cantCuotas || 0)) return null;
   return { numCuota: n, valorCuota: Number(compra.valorCuota) || 0 };
-}
-
-/** Inserta tarjetas por defecto para un usuario nuevo */
-async function insertDefaultTarjetas(userId) {
-  const tarjetas = [];
-  for (const t of DEFAULT_TARJETAS) {
-    const { data, error } = await supabase
-      .from('tarjetas')
-      .insert({ user_id: userId, nombre: t.nombre, tipo: t.tipo, color: t.color })
-      .select('id, nombre, tipo, color')
-      .single();
-    if (!error && data) tarjetas.push(data);
-  }
-  return tarjetas;
 }
 
 export function useFinanzas(userId) {
@@ -73,16 +81,10 @@ export function useFinanzas(userId) {
     (async () => {
       try {
         // Intentar migrar localStorage primero
-        const migrated = await migrateLocalStorage(userId);
+        await migrateLocalStorage(userId);
 
         // Cargar datos de Supabase
-        let data = await loadAllData(userId);
-
-        // Si no hay tarjetas (usuario nuevo sin migración), crear las default
-        if (!migrated && data.tarjetas.length === 0) {
-          const defaults = await insertDefaultTarjetas(userId);
-          data = { ...data, tarjetas: defaults };
-        }
+        const data = await loadAllData(userId);
 
         if (!cancelled) {
           setState(data);
@@ -145,7 +147,7 @@ export function useFinanzas(userId) {
 
   // ---------- Tarjetas ----------
   const addTarjeta = useCallback((t) => {
-    const nueva = { id: crypto.randomUUID(), color: '#64748b', tipo: 'tarjeta', ...t };
+    const nueva = { id: crypto.randomUUID(), color: '#64748b', tipo: 'tarjeta', archivada: false, ...t };
     setState((s) => ({ ...s, tarjetas: [...s.tarjetas, nueva] }));
     sync(() => saveTarjeta(userIdRef.current, nueva));
   }, [sync]);
@@ -155,6 +157,19 @@ export function useFinanzas(userId) {
     sync(() => updateTarjetaDb(userIdRef.current, id, patch));
   }, [sync]);
 
+  // Archiva la tarjeta: deja de ofrecerse para nuevas compras/pagos pero
+  // conserva el historial. La tarjeta sigue visible en meses con movimientos.
+  const archiveTarjeta = useCallback((id) => {
+    setState((s) => ({ ...s, tarjetas: s.tarjetas.map((t) => t.id === id ? { ...t, archivada: true } : t) }));
+    sync(() => archiveTarjetaDb(userIdRef.current, id));
+  }, [sync]);
+
+  const unarchiveTarjeta = useCallback((id) => {
+    setState((s) => ({ ...s, tarjetas: s.tarjetas.map((t) => t.id === id ? { ...t, archivada: false } : t) }));
+    sync(() => unarchiveTarjetaDb(userIdRef.current, id));
+  }, [sync]);
+
+  // Borrado físico: elimina la tarjeta y, por cascade, su historial de compras y pagos.
   const removeTarjeta = useCallback((id) => {
     setState((s) => ({
       ...s,
@@ -176,6 +191,9 @@ export function useFinanzas(userId) {
       esCompartida: false,
       divididaEntre: '',
       valorPorPersona: null,
+      esSubscripcion: false,
+      mesFin: null,
+      periodos: [],
       ...c,
       valorCuota: Math.round(valorCuota),
     };
@@ -188,7 +206,8 @@ export function useFinanzas(userId) {
       const newCompras = s.compras.map((c) => {
         if (c.id !== id) return c;
         const next = { ...c, ...patch };
-        if (patch.valorConInteres != null || patch.valorCompra != null || patch.cantCuotas != null) {
+        // Las subscripciones ignoran cantCuotas/valorCompra: su valorCuota se setea directo.
+        if (!next.esSubscripcion && (patch.valorConInteres != null || patch.valorCompra != null || patch.cantCuotas != null)) {
           const base = Number(next.valorConInteres || next.valorCompra || 0);
           next.valorCuota = Math.round(base / Math.max(1, Number(next.cantCuotas || 1)));
         }
@@ -232,6 +251,38 @@ export function useFinanzas(userId) {
     sync(() => deletePagoPuntual(userIdRef.current, id));
   }, [sync]);
 
+  // ---------- Personas ----------
+  const addPersona = useCallback((p) => {
+    const nueva = { id: crypto.randomUUID(), color: '#64748b', ...p };
+    setState((s) => ({ ...s, personas: [...s.personas, nueva].sort((a, b) => a.nombre.localeCompare(b.nombre)) }));
+    sync(() => savePersona(userIdRef.current, nueva));
+  }, [sync]);
+
+  const updatePersona = useCallback((id, patch) => {
+    setState((s) => ({
+      ...s,
+      personas: s.personas.map((p) => p.id === id ? { ...p, ...patch } : p).sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    }));
+    sync(() => {
+      const updated = { id, color: '#64748b', nombre: '', ...patch };
+      savePersona(userIdRef.current, updated);
+    });
+  }, [sync]);
+
+  const removePersona = useCallback((id) => {
+    setState((s) => ({
+      ...s,
+      personas: s.personas.filter((p) => p.id !== id),
+      // Limpia la persona de cualquier compra compartida donde apareciera
+      compras: s.compras.map((c) =>
+        Array.isArray(c.personasIds) && c.personasIds.includes(id)
+          ? { ...c, personasIds: c.personasIds.filter((pid) => pid !== id) }
+          : c
+      ),
+    }));
+    sync(() => deletePersona(userIdRef.current, id));
+  }, [sync]);
+
   // ---------- Reset ----------
   const resetAll = useCallback(async () => {
     if (!userIdRef.current) return;
@@ -244,9 +295,6 @@ export function useFinanzas(userId) {
       supabase.from('tarjetas').delete().eq('user_id', uid),
       supabase.from('sueldos').delete().eq('user_id', uid),
     ]);
-    // Reinsertar tarjetas por defecto
-    const defaults = await insertDefaultTarjetas(uid);
-    setState((s) => ({ ...s, tarjetas: defaults }));
   }, []);
 
   const importJson = useCallback(async (obj) => {
@@ -309,9 +357,10 @@ export function useFinanzas(userId) {
   return {
     state, loading, syncError, clearSyncError,
     setSueldo, addIngresoExtra, removeIngresoExtra,
-    addTarjeta, updateTarjeta, removeTarjeta,
+    addTarjeta, updateTarjeta, archiveTarjeta, unarchiveTarjeta, removeTarjeta,
     addCompra, updateCompra, removeCompra, toggleRevisado,
     addPagoPuntual, removePagoPuntual,
+    addPersona, updatePersona, removePersona,
     resetAll, importJson,
   };
 }
@@ -342,6 +391,12 @@ export function useResumenMes(state, ym) {
       porTarjeta[p.tarjetaId].total += Number(p.monto) || 0;
     }
 
+    // Tarjetas archivadas solo aparecen en el mes si tienen movimientos.
+    for (const id of Object.keys(porTarjeta)) {
+      const b = porTarjeta[id];
+      if (b.tarjeta.archivada && b.items.length === 0) delete porTarjeta[id];
+    }
+
     const gastos = Object.values(porTarjeta).reduce((a, b) => a + b.total, 0);
     const saldo = ingresos - gastos;
 
@@ -355,6 +410,30 @@ export function useResumenMes(state, ym) {
 
     return { ingresos, ingresoBase, ingresoExtra, gastos, saldo, porTarjeta, compartidas, sueldoObj };
   }, [state, ym]);
+}
+
+/** Serie de N meses terminando en `ym` (incluido). Útil para sparklines. */
+export function useTrailingMonths(state, ym, n = 6) {
+  return useMemo(() => {
+    const out = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const k = addMonths(ym, -i);
+      const sueldoObj = state.sueldos[k] || { sueldo: 0, ingresosExtra: [] };
+      const ingresoBase = Number(sueldoObj.sueldo) || 0;
+      const ingresoExtra = (sueldoObj.ingresosExtra || []).reduce((a, b) => a + (Number(b.monto) || 0), 0);
+      const ingresos = ingresoBase + ingresoExtra;
+      let gastos = 0;
+      for (const c of state.compras) {
+        const cuota = cuotaDelMes(c, k);
+        if (cuota) gastos += cuota.valorCuota;
+      }
+      for (const p of state.pagosPuntuales) {
+        if (p.mesYM === k) gastos += Number(p.monto) || 0;
+      }
+      out.push({ ym: k, ingresos, gastos });
+    }
+    return out;
+  }, [state, ym, n]);
 }
 
 /** Serie anual: ingresos/gastos/saldo por mes del año */

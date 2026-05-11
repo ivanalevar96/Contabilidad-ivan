@@ -12,8 +12,11 @@ create table public.tarjetas (
   nombre     text not null,
   tipo       text not null check (tipo in ('tarjeta', 'persona')),
   color      text not null default '#64748b',
+  archivada  boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+create index tarjetas_user_archivada_idx on public.tarjetas (user_id, archivada);
 
 alter table public.tarjetas enable row level security;
 
@@ -66,9 +69,15 @@ create table public.compras (
   es_compartida     boolean not null default false,
   dividida_entre    text not null default '',
   valor_por_persona integer,
+  es_subscripcion   boolean not null default false,
+  mes_fin           text,
+  periodos          jsonb not null default '[]',
+  personas_ids      jsonb not null default '[]',
   revisado          jsonb not null default '{}',
   created_at        timestamptz not null default now()
 );
+
+create index compras_user_subs_idx on public.compras (user_id, es_subscripcion);
 
 alter table public.compras enable row level security;
 
@@ -80,6 +89,30 @@ create policy "Users update own compras"
   on public.compras for update using (auth.uid() = user_id);
 create policy "Users delete own compras"
   on public.compras for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- PERSONAS (para compras compartidas)
+-- ============================================================
+create table public.personas (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  nombre      text not null,
+  color       text not null default '#64748b',
+  created_at  timestamptz not null default now()
+);
+
+create index personas_user_idx on public.personas (user_id);
+
+alter table public.personas enable row level security;
+
+create policy "Users see own personas"
+  on public.personas for select using (auth.uid() = user_id);
+create policy "Users insert own personas"
+  on public.personas for insert with check (auth.uid() = user_id);
+create policy "Users update own personas"
+  on public.personas for update using (auth.uid() = user_id);
+create policy "Users delete own personas"
+  on public.personas for delete using (auth.uid() = user_id);
 
 -- ============================================================
 -- PAGOS PUNTUALES

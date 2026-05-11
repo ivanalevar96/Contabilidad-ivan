@@ -2,7 +2,29 @@ import { supabase } from './supabase';
 
 // ─── Mapeo snake_case ↔ camelCase ─────────────────────────────
 
+// Normaliza periodos para subscripciones: ordena por inicio y filtra inválidos.
+function normalizePeriodos(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter((p) => p && p.inicio)
+    .map((p) => ({ inicio: p.inicio, fin: p.fin || null }))
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+
 function compraToDb(userId, c) {
+  let periodos = c.esSubscripcion ? normalizePeriodos(c.periodos) : [];
+  // Si es subscripción y no hay periodos pero sí mesInicio, sintetiza un único período.
+  if (c.esSubscripcion && periodos.length === 0 && c.mesInicio) {
+    periodos = [{ inicio: c.mesInicio, fin: c.mesFin || null }];
+  }
+  // Mantenemos mesInicio/mesFin coherentes con el primer/último período para compat.
+  const mesInicio = c.esSubscripcion && periodos.length
+    ? periodos[0].inicio
+    : c.mesInicio;
+  const mesFin = c.esSubscripcion && periodos.length
+    ? (periodos[periodos.length - 1].fin || null)
+    : (c.mesFin || null);
+
   return {
     id: c.id,
     user_id: userId,
@@ -11,16 +33,26 @@ function compraToDb(userId, c) {
     valor_compra: Number(c.valorCompra) || 0,
     valor_con_interes: Number(c.valorConInteres) || 0,
     cant_cuotas: Number(c.cantCuotas) || 1,
-    mes_inicio: c.mesInicio,
+    mes_inicio: mesInicio,
     valor_cuota: Number(c.valorCuota) || 0,
     es_compartida: c.esCompartida || false,
     dividida_entre: c.divididaEntre || '',
     valor_por_persona: c.valorPorPersona != null ? Number(c.valorPorPersona) : null,
+    es_subscripcion: !!c.esSubscripcion,
+    mes_fin: mesFin,
+    periodos,
+    personas_ids: Array.isArray(c.personasIds) ? c.personasIds : [],
     revisado: c.revisado || {},
   };
 }
 
 function compraFromDb(row) {
+  const esSubscripcion = !!row.es_subscripcion;
+  let periodos = normalizePeriodos(row.periodos);
+  // Compat: si es subscripción y no hay periodos en BD, los sintetiza desde mesInicio/mesFin.
+  if (esSubscripcion && periodos.length === 0 && row.mes_inicio) {
+    periodos = [{ inicio: row.mes_inicio, fin: row.mes_fin || null }];
+  }
   return {
     id: row.id,
     tarjetaId: row.tarjeta_id,
@@ -33,6 +65,10 @@ function compraFromDb(row) {
     esCompartida: row.es_compartida,
     divididaEntre: row.dividida_entre,
     valorPorPersona: row.valor_por_persona,
+    esSubscripcion,
+    mesFin: row.mes_fin || null,
+    periodos,
+    personasIds: Array.isArray(row.personas_ids) ? row.personas_ids : [],
     revisado: row.revisado || {},
   };
 }
@@ -61,11 +97,12 @@ function pagoFromDb(row) {
 // ─── Cargar todos los datos ───────────────────────────────────
 
 export async function loadAllData(userId) {
-  const [tarjetasRes, sueldosRes, comprasRes, pagosRes] = await Promise.all([
+  const [tarjetasRes, sueldosRes, comprasRes, pagosRes, personasRes] = await Promise.all([
     supabase.from('tarjetas').select('*').eq('user_id', userId),
     supabase.from('sueldos').select('*').eq('user_id', userId),
     supabase.from('compras').select('*').eq('user_id', userId),
     supabase.from('pagos_puntuales').select('*').eq('user_id', userId),
+    supabase.from('personas').select('*').eq('user_id', userId).order('nombre'),
   ]);
 
   // Tarjetas
@@ -74,6 +111,7 @@ export async function loadAllData(userId) {
     nombre: t.nombre,
     tipo: t.tipo,
     color: t.color,
+    archivada: !!t.archivada,
   }));
 
   // Sueldos: filas → diccionario { 'YYYY-MM': { sueldo, ingresosExtra } }
@@ -91,7 +129,14 @@ export async function loadAllData(userId) {
   // Pagos puntuales
   const pagosPuntuales = (pagosRes.data || []).map(pagoFromDb);
 
-  return { tarjetas, sueldos, compras, pagosPuntuales };
+  // Personas
+  const personas = (personasRes.data || []).map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    color: p.color,
+  }));
+
+  return { tarjetas, sueldos, compras, pagosPuntuales, personas };
 }
 
 // ─── Tarjetas ─────────────────────────────────────────────────
@@ -103,7 +148,26 @@ export async function saveTarjeta(userId, t) {
     nombre: t.nombre,
     tipo: t.tipo,
     color: t.color,
+    archivada: !!t.archivada,
   });
+  if (error) throw error;
+}
+
+export async function archiveTarjetaDb(userId, id) {
+  const { error } = await supabase
+    .from('tarjetas')
+    .update({ archivada: true })
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function unarchiveTarjetaDb(userId, id) {
+  const { error } = await supabase
+    .from('tarjetas')
+    .update({ archivada: false })
+    .eq('id', id)
+    .eq('user_id', userId);
   if (error) throw error;
 }
 
@@ -121,6 +185,7 @@ export async function updateTarjetaDb(userId, id, patch) {
   if (patch.nombre != null) updates.nombre = patch.nombre;
   if (patch.tipo != null) updates.tipo = patch.tipo;
   if (patch.color != null) updates.color = patch.color;
+  if (patch.archivada != null) updates.archivada = !!patch.archivada;
 
   const { error } = await supabase
     .from('tarjetas')
@@ -168,6 +233,27 @@ export async function savePagoPuntual(userId, p) {
 export async function deletePagoPuntual(userId, id) {
   const { error } = await supabase
     .from('pagos_puntuales')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+// ─── Personas ─────────────────────────────────────────────────
+
+export async function savePersona(userId, p) {
+  const { error } = await supabase.from('personas').upsert({
+    id: p.id,
+    user_id: userId,
+    nombre: p.nombre,
+    color: p.color || '#64748b',
+  });
+  if (error) throw error;
+}
+
+export async function deletePersona(userId, id) {
+  const { error } = await supabase
+    .from('personas')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);

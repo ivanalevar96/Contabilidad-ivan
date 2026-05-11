@@ -5,6 +5,7 @@ import TopBar from './components/TopBar';
 import MesView from './components/MesView';
 import AnnualView from './components/AnnualView';
 import TarjetasAdmin from './components/TarjetasAdmin';
+import { MesSkeleton } from './components/Skeleton';
 import { useFinanzas } from './store';
 import { currentYM, yearOf } from './utils/format';
 
@@ -32,12 +33,7 @@ export default function App() {
         />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           {f.loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="inline-block w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-slate-400 text-sm">Cargando datos...</p>
-              </div>
-            </div>
+            <MesSkeleton />
           ) : (
             <>
               {view === 'mes'  && <MesView ym={ym} f={f} />}
