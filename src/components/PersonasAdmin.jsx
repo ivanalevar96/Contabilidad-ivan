@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import Modal from './Modal';
 import ConfirmModal from './ConfirmModal';
 
@@ -48,7 +49,6 @@ export default function PersonasAdmin({ f }) {
   const [editingPersona, setEditingPersona] = useState(null);
   const [removeConfirm, setRemoveConfirm] = useState(null);
 
-  // Add form state
   const [nombre, setNombre] = useState('');
   const [color, setColor] = useState(COLORS[0]);
   const [telefono, setTelefono] = useState(PREFIX);
@@ -86,6 +86,7 @@ export default function PersonasAdmin({ f }) {
     f.addPersona({ nombre: nombreTrim, color, telefono: tel });
     resetAdd();
     setShowAdd(false);
+    toast.success(`${nombreTrim} agregado/a`);
   };
 
   return (
@@ -158,7 +159,11 @@ export default function PersonasAdmin({ f }) {
         open={!!editingPersona}
         persona={editingPersona}
         onClose={() => setEditingPersona(null)}
-        onSave={(n, c, t) => { f.updatePersona(editingPersona.id, { nombre: n, color: c, telefono: t }); setEditingPersona(null); }}
+        onSave={(n, c, t) => {
+          f.updatePersona(editingPersona.id, { nombre: n, color: c, telefono: t });
+          setEditingPersona(null);
+          toast.success(`${n} actualizado/a`);
+        }}
       />
 
       {/* Confirm: eliminar persona */}
@@ -169,7 +174,11 @@ export default function PersonasAdmin({ f }) {
         message={`Se eliminará "${removeConfirm?.nombre}" y se quitará de las compras compartidas donde aparezca.`}
         confirmLabel="Eliminar"
         danger
-        onConfirm={() => f.removePersona(removeConfirm.id)}
+        onConfirm={() => {
+          const nombre = removeConfirm.nombre;
+          f.removePersona(removeConfirm.id);
+          toast.success(`${nombre} eliminado/a`);
+        }}
       />
     </section>
   );
@@ -210,6 +219,7 @@ function EditPersonaModal({ open, persona, onClose, onSave }) {
 
     if (!valid) return;
     onSave(nombreTrim, color, tel);
+    onClose();
   };
 
   return (

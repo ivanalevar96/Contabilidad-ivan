@@ -12,7 +12,15 @@
       "Bash(git -C \"C:/Users/admin/Desktop/finanzas-app\" push origin main)",
       "Bash(git worktree *)",
       "Bash(git branch *)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git commit -m 'chore: añadir permisos locales de sesión *)",
+      "Bash(ls \"C:/Users/admin/Desktop/finanzas-app/\" -la 2>&1 | grep -i env)",
+      "Bash(findstr /s /n \"confirm\\\\|alert\\\\|prompt\" \"C:\\\\Users\\\\admin\\\\Desktop\\\\finanzas-app\\\\.claude\\\\worktrees\\\\agitated-cori-df398e\\\\src\")",
+      "Bash(findstr /v \"node_modules\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(findstr -i \"toast\\\\|sonner\\\\|alert\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/sonner/package.json'\\).version\\)\")"
     ]
   }
 }

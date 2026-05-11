@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 import { useAuth } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import TopBar from './components/TopBar';
@@ -46,6 +47,7 @@ export default function App() {
           Finanzas · datos sincronizados en la nube · usa Exportar para respaldo
         </footer>
       </div>
+      <Toaster position="bottom-right" theme="dark" richColors closeButton />
     </AuthGuard>
   );
 }
