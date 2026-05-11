@@ -4,6 +4,32 @@ import { miParteCompra } from '../store';
 import Modal from './Modal';
 import ConfirmModal from './ConfirmModal';
 
+function buildWhatsAppMsg(persona, pendiente, abonado, compartidas, tarjetas, ym) {
+  const tarjetaMap = Object.fromEntries(tarjetas.map((t) => [t.id, t]));
+  const items = compartidas.filter((it) => {
+    const vpp = Number(it.compra.valorPorPersona);
+    return Number.isFinite(vpp) && vpp > 0 &&
+      Array.isArray(it.compra.personasIds) && it.compra.personasIds.includes(persona.id);
+  });
+
+  const lines = [`Hola ${persona.nombre}! 👋 Te detallo los gastos compartidos de ${monthLabel(ym)}:\n`];
+  for (const it of items) {
+    const tarj = tarjetaMap[it.compra.tarjetaId];
+    const cuota = it.compra.esSubscripcion
+      ? `mes #${it.numCuota}`
+      : `cuota ${it.numCuota}/${it.compra.cantCuotas}`;
+    lines.push(`• ${it.compra.descripcion} (${tarj?.nombre || '?'} · ${cuota}): ${fmt(it.compra.valorPorPersona)}`);
+  }
+
+  lines.push(`\n💰 Total: ${fmt(pendiente + abonado)}`);
+  if (abonado > 0) {
+    lines.push(`✅ Abonado: ${fmt(abonado)}`);
+    lines.push(`⏳ Pendiente: ${fmt(pendiente)}`);
+  }
+  lines.push(`\nGracias! 🙏`);
+  return lines.join('\n');
+}
+
 export default function ComprasCompartidas({ compartidas, tarjetas, personas = [], liquidaciones = [], ym, updateCompra, addLiquidacion, removeLiquidacion }) {
   const [editingId, setEditingId] = useState(null);
   const [abonandoPersonaId, setAbonandoPersonaId] = useState(null);
@@ -114,7 +140,7 @@ export default function ComprasCompartidas({ compartidas, tarjetas, personas = [
                       )}
                       {persona.telefono && pendiente > 0 && (
                         <a
-                          href={`https://wa.me/${persona.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${persona.nombre}! 🙏 Para ${monthLabel(ym)} me debes ${fmt(pendiente)} por gastos compartidos.`)}`}
+                          href={`https://wa.me/${persona.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(buildWhatsAppMsg(persona, pendiente, abonado, compartidas, tarjetas, ym))}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
