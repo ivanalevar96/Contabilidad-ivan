@@ -5,6 +5,12 @@ import Modal from './Modal';
 import ConfirmModal from './ConfirmModal';
 
 function buildWhatsAppMsg(persona, pendiente, abonado, compartidas, tarjetas, ym) {
+  const wave  = String.fromCodePoint(0x1F44B);
+  const money = String.fromCodePoint(0x1F4B0);
+  const check = String.fromCodePoint(0x2705);
+  const clock = String.fromCodePoint(0x23F3);
+  const pray  = String.fromCodePoint(0x1F64F);
+
   const tarjetaMap = Object.fromEntries(tarjetas.map((t) => [t.id, t]));
   const items = compartidas.filter((it) => {
     const vpp = Number(it.compra.valorPorPersona);
@@ -12,7 +18,7 @@ function buildWhatsAppMsg(persona, pendiente, abonado, compartidas, tarjetas, ym
       Array.isArray(it.compra.personasIds) && it.compra.personasIds.includes(persona.id);
   });
 
-  const lines = [`Hola ${persona.nombre}! 👋 Te detallo los gastos compartidos de ${monthLabel(ym)}:\n`];
+  const lines = [`Hola ${persona.nombre}! ${wave} Te detallo los gastos compartidos de ${monthLabel(ym)}:\n`];
   for (const it of items) {
     const tarj = tarjetaMap[it.compra.tarjetaId];
     const cuota = it.compra.esSubscripcion
@@ -21,12 +27,12 @@ function buildWhatsAppMsg(persona, pendiente, abonado, compartidas, tarjetas, ym
     lines.push(`• ${it.compra.descripcion} (${tarj?.nombre || '?'} · ${cuota}): ${fmt(it.compra.valorPorPersona)}`);
   }
 
-  lines.push(`\n💰 Total: ${fmt(pendiente + abonado)}`);
+  lines.push(`\n${money} Total: ${fmt(pendiente + abonado)}`);
   if (abonado > 0) {
-    lines.push(`✅ Abonado: ${fmt(abonado)}`);
-    lines.push(`⏳ Pendiente: ${fmt(pendiente)}`);
+    lines.push(`${check} Abonado: ${fmt(abonado)}`);
+    lines.push(`${clock} Pendiente: ${fmt(pendiente)}`);
   }
-  lines.push(`\nGracias! 🙏`);
+  lines.push(`\nGracias! ${pray}`);
   return lines.join('\n');
 }
 
