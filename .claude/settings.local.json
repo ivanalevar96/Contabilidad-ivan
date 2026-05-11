@@ -6,6 +6,12 @@
       "Bash(npx vite:*)",
       "Bash(ls node_modules/@supabase 2>&1 | head -3; ls /c/Users/admin/Desktop/finanzas-app/node_modules/@supabase 2>&1 | head -3)",
       "Bash(git push *)",
+      "Bash(git -C \"C:/Users/admin/Desktop/finanzas-app\" add .claude/settings.local.json)",
+      "Bash(git -C \"C:/Users/admin/Desktop/finanzas-app\" commit --no-edit)",
+      "Bash(git -C \"C:/Users/admin/Desktop/finanzas-app\" log --oneline -3)",
+      "Bash(git -C \"C:/Users/admin/Desktop/finanzas-app\" push origin main)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
       "mcp__Claude_Preview__preview_start"
     ]
   }
