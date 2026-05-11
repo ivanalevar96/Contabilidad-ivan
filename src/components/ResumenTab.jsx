@@ -23,7 +23,7 @@ export default function ResumenTab({ ym, f, resumen }) {
       else tipo = `${it.numCuota}/${it.compra.cantCuotas}`;
       return {
         desc: it.compra?.descripcion || it.puntual?.descripcion,
-        monto: it.valorCuota,
+        monto: it.miParte ?? it.valorCuota,
         tarjeta: b.tarjeta,
         tipo,
       };

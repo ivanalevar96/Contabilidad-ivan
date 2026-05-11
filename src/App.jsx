@@ -35,11 +35,11 @@ export default function App() {
           {f.loading ? (
             <MesSkeleton />
           ) : (
-            <>
+            <div key={view} className="animate-fadein">
               {view === 'mes'  && <MesView ym={ym} f={f} />}
               {view === 'anio' && <AnnualView year={year} f={f} onPickMonth={(m) => { setYM(m); setView('mes'); }} />}
               {view === 'conf' && <TarjetasAdmin f={f} />}
-            </>
+            </div>
           )}
         </main>
         <footer className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 text-center text-xs text-slate-500">

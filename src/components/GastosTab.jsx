@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import TarjetaBloque from './TarjetaBloque';
 import CompraForm from './CompraForm';
 import PagoPuntualForm from './PagoPuntualForm';
+import Modal from './Modal';
 import { fmt } from '../utils/format';
 
 export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = [] }) {
@@ -11,9 +12,8 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
   const [search, setSearch] = useState('');
 
   const startEdit = (c) => {
-    setMode(null);
     setEditing(c);
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    setMode(null);
   };
 
   const submitEdit = (patch) => {
@@ -72,22 +72,35 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
         </div>
       </section>
 
-      {editing && (
-        <CompraForm
-          tarjetas={tarjetasActivas}
-          personas={personas}
-          mesInicio={editing.mesInicio || ym}
-          onAdd={submitEdit}
-          onClose={() => setEditing(null)}
-          initial={editing}
-        />
-      )}
-      {!editing && mode === 'compra' && (
-        <CompraForm tarjetas={tarjetasActivas} personas={personas} mesInicio={ym} onAdd={f.addCompra} onClose={() => setMode(null)} />
-      )}
-      {!editing && mode === 'pago' && (
-        <PagoPuntualForm tarjetas={tarjetasActivas} mesYM={ym} onAdd={f.addPagoPuntual} onClose={() => setMode(null)} />
-      )}
+      {/* Modal: editar compra existente */}
+      <Modal open={!!editing} onClose={() => setEditing(null)} title="Editar compra" size="lg">
+        {editing && (
+          <div className="p-1">
+            <CompraForm
+              tarjetas={tarjetasActivas}
+              personas={personas}
+              mesInicio={editing.mesInicio || ym}
+              onAdd={submitEdit}
+              onClose={() => setEditing(null)}
+              initial={editing}
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal: nueva compra */}
+      <Modal open={mode === 'compra'} onClose={() => setMode(null)} title="Nueva compra / subscripción" size="lg">
+        <div className="p-1">
+          <CompraForm tarjetas={tarjetasActivas} personas={personas} mesInicio={ym} onAdd={(c) => { f.addCompra(c); setMode(null); }} onClose={() => setMode(null)} />
+        </div>
+      </Modal>
+
+      {/* Modal: pago puntual */}
+      <Modal open={mode === 'pago'} onClose={() => setMode(null)} title="Pago puntual">
+        <div className="p-4">
+          <PagoPuntualForm tarjetas={tarjetasActivas} mesYM={ym} onAdd={(p) => { f.addPagoPuntual(p); setMode(null); }} onClose={() => setMode(null)} />
+        </div>
+      </Modal>
 
       <div className="space-y-4">
         {bloques.length === 0 ? (

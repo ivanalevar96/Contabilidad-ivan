@@ -73,6 +73,29 @@ function compraFromDb(row) {
   };
 }
 
+function liquidacionFromDb(row) {
+  return {
+    id: row.id,
+    personaId: row.persona_id,
+    mesYM: row.mes_ym,
+    monto: row.monto,
+    fecha: row.fecha,
+    nota: row.nota || '',
+  };
+}
+
+function liquidacionToDb(userId, l) {
+  return {
+    id: l.id,
+    user_id: userId,
+    persona_id: l.personaId,
+    mes_ym: l.mesYM,
+    monto: Number(l.monto) || 0,
+    fecha: l.fecha,
+    nota: l.nota || '',
+  };
+}
+
 function pagoToDb(userId, p) {
   return {
     id: p.id,
@@ -97,12 +120,13 @@ function pagoFromDb(row) {
 // ─── Cargar todos los datos ───────────────────────────────────
 
 export async function loadAllData(userId) {
-  const [tarjetasRes, sueldosRes, comprasRes, pagosRes, personasRes] = await Promise.all([
+  const [tarjetasRes, sueldosRes, comprasRes, pagosRes, personasRes, liquidacionesRes] = await Promise.all([
     supabase.from('tarjetas').select('*').eq('user_id', userId),
     supabase.from('sueldos').select('*').eq('user_id', userId),
     supabase.from('compras').select('*').eq('user_id', userId),
     supabase.from('pagos_puntuales').select('*').eq('user_id', userId),
     supabase.from('personas').select('*').eq('user_id', userId).order('nombre'),
+    supabase.from('liquidaciones').select('*').eq('user_id', userId),
   ]);
 
   // Tarjetas
@@ -134,9 +158,15 @@ export async function loadAllData(userId) {
     id: p.id,
     nombre: p.nombre,
     color: p.color,
+    telefono: p.telefono || null,
   }));
 
-  return { tarjetas, sueldos, compras, pagosPuntuales, personas };
+  // Liquidaciones: si la tabla no existe en BD aún, fallamos suave devolviendo [].
+  const liquidaciones = liquidacionesRes.error
+    ? []
+    : (liquidacionesRes.data || []).map(liquidacionFromDb);
+
+  return { tarjetas, sueldos, compras, pagosPuntuales, personas, liquidaciones };
 }
 
 // ─── Tarjetas ─────────────────────────────────────────────────
@@ -247,6 +277,7 @@ export async function savePersona(userId, p) {
     user_id: userId,
     nombre: p.nombre,
     color: p.color || '#64748b',
+    telefono: p.telefono || null,
   });
   if (error) throw error;
 }
@@ -254,6 +285,22 @@ export async function savePersona(userId, p) {
 export async function deletePersona(userId, id) {
   const { error } = await supabase
     .from('personas')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+// ─── Liquidaciones ────────────────────────────────────────────
+
+export async function saveLiquidacion(userId, l) {
+  const { error } = await supabase.from('liquidaciones').upsert(liquidacionToDb(userId, l));
+  if (error) throw error;
+}
+
+export async function deleteLiquidacion(userId, id) {
+  const { error } = await supabase
+    .from('liquidaciones')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);

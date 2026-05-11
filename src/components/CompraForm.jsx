@@ -208,20 +208,20 @@ export default function CompraForm({ tarjetas, personas = [], mesInicio, onAdd, 
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm bg-slate-900/60 rounded-lg p-3 border border-slate-800">
-            <div className="flex items-center gap-3">
+          <div className="text-sm bg-slate-900/60 rounded-lg p-3 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between gap-2">
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={customCuota} onChange={(e) => setCustomCuota(e.target.checked)} />
                 <span className="text-slate-300">Definir valor cuota manualmente</span>
               </label>
-              {customCuota && (
-                <input type="number" className="input w-32" placeholder="$/cuota" value={valorCuotaManual} onChange={(e) => setValorCuotaManual(e.target.value)} />
-              )}
+              <div className="text-right flex-shrink-0">
+                <div className="label text-[10px]">Valor cuota</div>
+                <div className="text-cyan-300 font-semibold">${valorCuota.toLocaleString('es-CL')}</div>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="label">Valor cuota</div>
-              <div className="text-cyan-300 font-semibold">${valorCuota.toLocaleString('es-CL')}</div>
-            </div>
+            {customCuota && (
+              <input type="number" className="input" placeholder="$/cuota" value={valorCuotaManual} onChange={(e) => setValorCuotaManual(e.target.value)} />
+            )}
           </div>
         </>
       )}
@@ -272,8 +272,9 @@ export default function CompraForm({ tarjetas, personas = [], mesInicio, onAdd, 
             )}
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">Mi parte ($ por persona)</label>
-                <input type="number" className="input mt-1" value={form.valorPorPersona} onChange={(e) => set('valorPorPersona', e.target.value)} placeholder="Opcional" />
+                <label className="label">Parte de cada persona asociada</label>
+                <input type="number" className="input mt-1" value={form.valorPorPersona} onChange={(e) => set('valorPorPersona', e.target.value)} placeholder="$ por persona" />
+                <div className="text-[11px] text-slate-500 mt-1">Lo que paga cada uno de los asociados. Tu parte = cuota − (este monto × cant. personas).</div>
               </div>
             </div>
           </div>

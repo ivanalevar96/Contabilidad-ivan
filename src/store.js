@@ -8,6 +8,7 @@ import {
   saveCompra, deleteCompra,
   savePagoPuntual, deletePagoPuntual,
   savePersona, deletePersona,
+  saveLiquidacion, deleteLiquidacion,
 } from './lib/database';
 import { supabase } from './lib/supabase';
 
@@ -28,7 +29,25 @@ const empty = () => ({
   compras: [],
   pagosPuntuales: [],
   personas: [],
+  liquidaciones: [],
 });
+
+/**
+ * Devuelve el monto que MI bolsillo realmente paga este mes para esta compra.
+ * Compras compartidas: `valorPorPersona` es lo que paga CADA persona asociada;
+ * mi parte = cuota total − (valorPorPersona × n personas). Si la otra persona paga
+ * el 100%, valorPorPersona = cuota → mi parte = 0.
+ */
+export function miParteCompra(compra, valorCuotaCompleto) {
+  if (!compra?.esCompartida) return valorCuotaCompleto;
+  if (compra.valorPorPersona == null || compra.valorPorPersona === '') return valorCuotaCompleto;
+  const vpp = Number(compra.valorPorPersona);
+  if (!Number.isFinite(vpp)) return valorCuotaCompleto;
+  const nOtros = Array.isArray(compra.personasIds) && compra.personasIds.length > 0
+    ? compra.personasIds.length
+    : 1;
+  return Math.max(0, valorCuotaCompleto - vpp * nOtros);
+}
 
 /** Cuota aplicable a un mes YYYY-MM: retorna { numCuota, valorCuota, periodo? } o null. */
 export function cuotaDelMes(compra, ym) {
@@ -283,6 +302,23 @@ export function useFinanzas(userId) {
     sync(() => deletePersona(userIdRef.current, id));
   }, [sync]);
 
+  // ---------- Liquidaciones ----------
+  const addLiquidacion = useCallback((l) => {
+    const nueva = {
+      id: crypto.randomUUID(),
+      fecha: new Date().toISOString().slice(0, 10),
+      nota: '',
+      ...l,
+    };
+    setState((s) => ({ ...s, liquidaciones: [...(s.liquidaciones || []), nueva] }));
+    sync(() => saveLiquidacion(userIdRef.current, nueva));
+  }, [sync]);
+
+  const removeLiquidacion = useCallback((id) => {
+    setState((s) => ({ ...s, liquidaciones: (s.liquidaciones || []).filter((l) => l.id !== id) }));
+    sync(() => deleteLiquidacion(userIdRef.current, id));
+  }, [sync]);
+
   // ---------- Reset ----------
   const resetAll = useCallback(async () => {
     if (!userIdRef.current) return;
@@ -361,6 +397,7 @@ export function useFinanzas(userId) {
     addCompra, updateCompra, removeCompra, toggleRevisado,
     addPagoPuntual, removePagoPuntual,
     addPersona, updatePersona, removePersona,
+    addLiquidacion, removeLiquidacion,
     resetAll, importJson,
   };
 }
@@ -380,8 +417,9 @@ export function useResumenMes(state, ym) {
       const cuota = cuotaDelMes(c, ym);
       if (!cuota) continue;
       if (!porTarjeta[c.tarjetaId]) continue;
-      porTarjeta[c.tarjetaId].items.push({ compra: c, ...cuota });
-      porTarjeta[c.tarjetaId].total += cuota.valorCuota;
+      const miParte = miParteCompra(c, cuota.valorCuota);
+      porTarjeta[c.tarjetaId].items.push({ compra: c, ...cuota, miParte });
+      porTarjeta[c.tarjetaId].total += miParte;
     }
 
     for (const p of state.pagosPuntuales) {
@@ -425,7 +463,7 @@ export function useTrailingMonths(state, ym, n = 6) {
       let gastos = 0;
       for (const c of state.compras) {
         const cuota = cuotaDelMes(c, k);
-        if (cuota) gastos += cuota.valorCuota;
+        if (cuota) gastos += miParteCompra(c, cuota.valorCuota);
       }
       for (const p of state.pagosPuntuales) {
         if (p.mesYM === k) gastos += Number(p.monto) || 0;
@@ -450,7 +488,7 @@ export function useResumenAnual(state, year) {
       let gastos = 0;
       for (const c of state.compras) {
         const cuota = cuotaDelMes(c, ym);
-        if (cuota) gastos += cuota.valorCuota;
+        if (cuota) gastos += miParteCompra(c, cuota.valorCuota);
       }
       for (const p of state.pagosPuntuales) {
         if (p.mesYM === ym) gastos += Number(p.monto) || 0;

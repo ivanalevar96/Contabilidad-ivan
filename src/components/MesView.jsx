@@ -30,7 +30,11 @@ export default function MesView({ ym, f }) {
         <SegmentedTabs tabs={tabs} value={tab} onChange={setTab} />
       </div>
 
-      {tab === 'resumen' && <ResumenTab ym={ym} f={f} resumen={resumen} />}
+      {tab === 'resumen' && (
+        <div className="animate-fadein">
+          <ResumenTab ym={ym} f={f} resumen={resumen} />
+        </div>
+      )}
 
       {tab === 'ingresos' && (
         <div className="animate-fadein">
@@ -46,7 +50,9 @@ export default function MesView({ ym, f }) {
       )}
 
       {tab === 'gastos' && (
-        <GastosTab ym={ym} f={f} resumen={resumen} tarjetasActivas={tarjetasActivas} personas={f.state.personas || []} />
+        <div className="animate-fadein">
+          <GastosTab ym={ym} f={f} resumen={resumen} tarjetasActivas={tarjetasActivas} personas={f.state.personas || []} />
+        </div>
       )}
 
       {tab === 'compartidas' && (
@@ -55,7 +61,11 @@ export default function MesView({ ym, f }) {
             compartidas={resumen.compartidas}
             tarjetas={f.state.tarjetas}
             personas={f.state.personas || []}
+            liquidaciones={f.state.liquidaciones || []}
+            ym={ym}
             updateCompra={f.updateCompra}
+            addLiquidacion={f.addLiquidacion}
+            removeLiquidacion={f.removeLiquidacion}
           />
         </div>
       )}
