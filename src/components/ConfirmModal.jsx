@@ -9,7 +9,7 @@ export default function ConfirmModal({
     <Modal open={open} onClose={hideCancel ? undefined : onClose} title={title} size="sm">
       <div className="p-5">
         {message && (
-          <p className="text-sm text-slate-300 whitespace-pre-line leading-relaxed">{message}</p>
+          <p className="text-sm text-text-2 whitespace-pre-line leading-relaxed">{message}</p>
         )}
         <div className="flex justify-end gap-2 mt-5">
           {!hideCancel && (

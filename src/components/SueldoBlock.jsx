@@ -1,71 +1,169 @@
-import { useState } from 'react';
-import { fmt, monthLabel } from '../utils/format';
+import { useState, useEffect } from 'react';
+import { fmt, monthLabel, fmtMonto, parseMonto } from '../utils/format';
+import { IconPencil, IconPlus, IconUp } from './icons';
+import Modal from './Modal';
 
 export default function SueldoBlock({ ym, sueldoObj, resumen, setSueldo, addIngresoExtra, removeIngresoExtra }) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(sueldoObj.sueldo || 0);
-  const [extraDesc, setExtraDesc] = useState('');
-  const [extraMonto, setExtraMonto] = useState('');
+  const [showEditSueldo, setShowEditSueldo] = useState(false);
+  const [showAddExtra, setShowAddExtra] = useState(false);
 
-  const onSave = () => {
-    setSueldo(ym, val);
-    setEditing(false);
+  const extras = sueldoObj.ingresosExtra || [];
+
+  return (
+    <div className="flex flex-col gap-[var(--section-gap)]">
+      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-[14px]">
+        {/* Sueldo */}
+        <div className="card p-6">
+          <div className="text-[13.5px] font-semibold mb-1.5">Sueldo del mes</div>
+          <div className="text-xs text-text-3 mb-4">Ingreso fijo · {monthLabel(ym)}</div>
+          <div className="num text-[32px] font-semibold tracking-[-0.02em] text-positive">{fmt(sueldoObj.sueldo || 0)}</div>
+          <button className="btn-ghost mt-[18px]" onClick={() => setShowEditSueldo(true)}>
+            <IconPencil size={15} /> Editar sueldo
+          </button>
+        </div>
+
+        {/* Total */}
+        <div className="rounded-card border border-border p-6" style={{ background: 'var(--accent-tint)' }}>
+          <div className="text-[13.5px] font-semibold mb-1.5">Total de ingresos</div>
+          <div className="text-xs text-text-3 mb-4">Sueldo + extras</div>
+          <div className="num text-[32px] font-semibold tracking-[-0.02em] text-accent">{fmt(resumen.ingresos)}</div>
+          <div className="mt-[18px] text-[12.5px] text-text-2">
+            {extras.length} ingreso{extras.length !== 1 ? 's' : ''} extra registrado{extras.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+      </div>
+
+      {/* Ingresos extra */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="text-[13.5px] font-semibold">Ingresos extra</div>
+          <button className="flex items-center gap-1.5 text-[13px] font-medium text-accent hover:opacity-80 transition-opacity" onClick={() => setShowAddExtra(true)}>
+            <IconPlus size={15} /> Agregar
+          </button>
+        </div>
+        <div className="flex flex-col gap-[7px]">
+          {extras.length === 0 && <div className="text-sm text-text-3 py-1">Sin ingresos extra este mes.</div>}
+          {extras.map((e) => (
+            <div key={e.id} className="flex items-center gap-3 bg-surface-2 rounded-[10px] px-3.5 py-3">
+              <div className="w-[30px] h-[30px] rounded-lg grid place-items-center flex-shrink-0" style={{ background: 'var(--accent-tint)', color: 'var(--accent)' }}>
+                <IconUp size={15} />
+              </div>
+              <div className="flex-1 min-w-0 text-[13.5px] font-medium truncate">{e.desc}</div>
+              <div className="num font-semibold text-[13.5px] text-positive">{fmt(e.monto)}</div>
+              <button className="text-text-3 hover:text-negative transition-colors" onClick={() => removeIngresoExtra(ym, e.id)} aria-label="Eliminar">✕</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modal: editar sueldo */}
+      <EditSueldoModal
+        open={showEditSueldo}
+        onClose={() => setShowEditSueldo(false)}
+        onSave={(monto) => {
+          setSueldo(ym, monto);
+          setShowEditSueldo(false);
+        }}
+        current={sueldoObj.sueldo || 0}
+        mesLabel={monthLabel(ym)}
+      />
+
+      {/* Modal: nuevo ingreso extra */}
+      <IngresoExtraModal
+        open={showAddExtra}
+        onClose={() => setShowAddExtra(false)}
+        onSave={(desc, monto) => {
+          addIngresoExtra(ym, desc || 'Ingreso extra', monto);
+          setShowAddExtra(false);
+        }}
+        mesLabel={monthLabel(ym)}
+      />
+    </div>
+  );
+}
+
+function EditSueldoModal({ open, onClose, onSave, current, mesLabel }) {
+  const [monto, setMonto] = useState('');
+
+  useEffect(() => {
+    if (open) setMonto(current > 0 ? fmtMonto(String(current)) : '');
+  }, [open, current]);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!parseMonto(monto)) return;
+    onSave(parseMonto(monto));
   };
 
   return (
-    <section className="card p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold">Ingresos · <span className="text-slate-400 font-normal">{monthLabel(ym)}</span></h2>
-        {!editing && (
-          <button className="btn-ghost" onClick={() => { setVal(sueldoObj.sueldo || 0); setEditing(true); }}>Editar sueldo</button>
-        )}
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-3">
-        <div className="card p-3 bg-emerald-500/5 border-emerald-500/20">
-          <div className="label">Sueldo base</div>
-          {editing ? (
-            <div className="mt-2 flex gap-2">
-              <input type="number" value={val} onChange={(e) => setVal(Number(e.target.value) || 0)} className="input" />
-              <button className="btn-primary" onClick={onSave}>Guardar</button>
-            </div>
-          ) : (
-            <div className="mt-1 text-xl font-bold text-emerald-300">{fmt(sueldoObj.sueldo || 0)}</div>
-          )}
+    <Modal open={open} onClose={onClose} title="Editar sueldo" size="sm">
+      <form onSubmit={submit} className="p-5 space-y-4">
+        <div className="text-xs text-text-3 -mt-1">Ingreso fijo para {mesLabel}.</div>
+        <div>
+          <div className="label mb-1.5">Monto</div>
+          <input
+            type="text"
+            inputMode="numeric"
+            className="input"
+            placeholder="$"
+            value={monto}
+            onChange={(e) => setMonto(fmtMonto(e.target.value))}
+            autoFocus
+          />
         </div>
-
-        <div className="card p-3">
-          <div className="label">Ingresos extra</div>
-          <div className="mt-1 text-xl font-bold">{fmt(resumen.ingresoExtra)}</div>
-          <div className="mt-2 space-y-1 max-h-24 overflow-auto">
-            {(sueldoObj.ingresosExtra || []).map((e) => (
-              <div key={e.id} className="flex items-center justify-between text-xs bg-slate-900/70 rounded px-2 py-1">
-                <span className="truncate">{e.desc}</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-emerald-300">{fmt(e.monto)}</span>
-                  <button className="text-rose-400 hover:text-rose-300" onClick={() => removeIngresoExtra(ym, e.id)}>✕</button>
-                </span>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (!extraMonto) return;
-            addIngresoExtra(ym, extraDesc || 'Ingreso extra', extraMonto);
-            setExtraDesc(''); setExtraMonto('');
-          }} className="mt-2 flex gap-1">
-            <input value={extraDesc} onChange={(e) => setExtraDesc(e.target.value)} placeholder="Descripción" className="input" />
-            <input type="number" value={extraMonto} onChange={(e) => setExtraMonto(e.target.value)} placeholder="$" className="input w-28" />
-            <button className="btn-primary" type="submit">+</button>
-          </form>
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={!parseMonto(monto)}>Guardar</button>
         </div>
+      </form>
+    </Modal>
+  );
+}
 
-        <div className="card p-3 bg-cyan-500/5 border-cyan-500/20">
-          <div className="label">Total ingresos</div>
-          <div className="mt-1 text-xl font-bold text-cyan-300">{fmt(resumen.ingresos)}</div>
-          <div className="mt-1 text-xs text-slate-400">Base + extras de {monthLabel(ym)}</div>
+function IngresoExtraModal({ open, onClose, onSave, mesLabel }) {
+  const [desc, setDesc] = useState('');
+  const [monto, setMonto] = useState('');
+
+  useEffect(() => {
+    if (open) { setDesc(''); setMonto(''); }
+  }, [open]);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!parseMonto(monto)) return;
+    onSave(desc.trim(), parseMonto(monto));
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Nuevo ingreso extra" size="sm">
+      <form onSubmit={submit} className="p-5 space-y-4">
+        <div className="text-xs text-text-3 -mt-1">Se sumará a los ingresos de {mesLabel}.</div>
+        <div>
+          <div className="label mb-1.5">Descripción</div>
+          <input
+            className="input"
+            placeholder="Ej: Bono, freelance, reembolso…"
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            autoFocus
+          />
         </div>
-      </div>
-    </section>
+        <div>
+          <div className="label mb-1.5">Monto</div>
+          <input
+            type="text"
+            inputMode="numeric"
+            className="input"
+            placeholder="$"
+            value={monto}
+            onChange={(e) => setMonto(fmtMonto(e.target.value))}
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={!parseMonto(monto)}>Agregar</button>
+        </div>
+      </form>
+    </Modal>
   );
 }

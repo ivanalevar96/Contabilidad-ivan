@@ -2,8 +2,9 @@ import { useState } from 'react';
 import PersonasAdmin from './PersonasAdmin';
 import ConfirmModal from './ConfirmModal';
 import Modal from './Modal';
+import { IconPlus, IconDownload, IconUpload, IconTrash, IconChevronDown } from './icons';
 
-const COLORS = ['#fb7185', '#f59e0b', '#a78bfa', '#34d399', '#22d3ee', '#f472b6', '#60a5fa', '#facc15', '#94a3b8'];
+const COLORS = ['#0d9488', '#0f766e', '#c9a04a', '#64748b', '#94a3b8', '#fb7185', '#f59e0b', '#a78bfa', '#60a5fa'];
 
 export default function TarjetasAdmin({ f }) {
   const [nombre, setNombre] = useState('');
@@ -45,18 +46,26 @@ export default function TarjetasAdmin({ f }) {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="card p-5">
-        <h2 className="text-base font-semibold mb-3">Tarjetas y cuentas</h2>
-        <div className="grid gap-2">
+    <div className="flex flex-col gap-[var(--section-gap)]">
+      <section className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-[13.5px] font-semibold">Tarjetas y cuentas</div>
+            <div className="text-xs text-text-3 mt-0.5">Medios de pago activos</div>
+          </div>
+          <button className="btn-primary !h-9 !px-3.5" onClick={() => setShowAdd(true)}>
+            <IconPlus size={15} /> Agregar
+          </button>
+        </div>
+        <div className="flex flex-col gap-2">
           {activas.map((t) => (
-            <div key={t.id} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <input type="color" value={t.color || '#64748b'} onChange={(e) => f.updateTarjeta(t.id, { color: e.target.value })} className="h-7 w-10 rounded bg-transparent flex-shrink-0" />
-                <input className="input flex-1 min-w-0" value={t.nombre} onChange={(e) => f.updateTarjeta(t.id, { nombre: e.target.value })} />
+            <div key={t.id} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-surface-2 border border-border rounded-[11px] px-3.5 py-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <input type="color" value={t.color || '#64748b'} onChange={(e) => f.updateTarjeta(t.id, { color: e.target.value })} className="h-[22px] w-[30px] rounded-[5px] bg-transparent flex-shrink-0 cursor-pointer border-0 p-0" />
+                <input className="input flex-1 min-w-0 !bg-surface" value={t.nombre} onChange={(e) => f.updateTarjeta(t.id, { nombre: e.target.value })} />
               </div>
               <div className="flex items-center gap-2">
-                <select className="input flex-1 sm:w-32" value={t.tipo} onChange={(e) => f.updateTarjeta(t.id, { tipo: e.target.value })}>
+                <select className="input flex-1 sm:w-32 !bg-surface" value={t.tipo} onChange={(e) => f.updateTarjeta(t.id, { tipo: e.target.value })}>
                   <option value="tarjeta">Tarjeta</option>
                   <option value="persona">Persona</option>
                 </select>
@@ -73,29 +82,27 @@ export default function TarjetasAdmin({ f }) {
             </div>
           ))}
           {activas.length === 0 && (
-            <div className="text-sm text-slate-400">No tienes tarjetas activas. Agrega una abajo.</div>
+            <div className="text-sm text-text-3">No tienes tarjetas activas. Agrega una arriba.</div>
           )}
         </div>
-
-        <button className="btn-primary mt-4 w-full" onClick={() => setShowAdd(true)}>+ Agregar tarjeta o persona</button>
       </section>
 
       {archivadas.length > 0 && (
-        <section className="card p-5">
+        <section className="card p-6">
           <button
-            className="w-full flex items-center justify-between text-base font-semibold mb-3"
+            className="w-full flex items-center justify-between text-[13.5px] font-semibold mb-3"
             onClick={() => setMostrarArchivadas((v) => !v)}
             type="button"
           >
             <span>Archivadas ({archivadas.length})</span>
-            <span className="text-slate-400 text-sm">{mostrarArchivadas ? '▲ ocultar' : '▼ mostrar'}</span>
+            <span className="text-text-3 transition-transform" style={{ transform: mostrarArchivadas ? 'rotate(180deg)' : 'none' }}><IconChevronDown size={16} /></span>
           </button>
           {mostrarArchivadas && (
-            <div className="grid gap-2">
+            <div className="flex flex-col gap-2">
               {archivadas.map((t) => (
-                <div key={t.id} className="flex items-center gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 opacity-75">
-                  <span className="h-7 w-10 rounded flex-shrink-0" style={{ background: t.color || '#64748b' }} />
-                  <span className="flex-1 text-slate-300 min-w-0 truncate">{t.nombre}<span className="text-slate-500 text-xs ml-2">{t.tipo === 'persona' ? 'persona' : 'tarjeta'}</span></span>
+                <div key={t.id} className="flex items-center gap-3 bg-surface-2 border border-border rounded-[11px] px-3.5 py-3 opacity-75">
+                  <span className="h-[22px] w-[30px] rounded-[5px] flex-shrink-0" style={{ background: t.color || '#64748b' }} />
+                  <span className="flex-1 text-text-2 min-w-0 truncate">{t.nombre}<span className="text-text-3 text-xs ml-2">{t.tipo === 'persona' ? 'persona' : 'tarjeta'}</span></span>
                   <button className="btn-ghost flex-shrink-0" onClick={() => f.unarchiveTarjeta(t.id)}>Restaurar</button>
                   <button
                     className="btn-danger flex-shrink-0"
@@ -116,14 +123,16 @@ export default function TarjetasAdmin({ f }) {
 
       <PersonasAdmin f={f} />
 
-      <section className="card p-5">
-        <h2 className="text-base font-semibold mb-3">Datos</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <button className="btn-ghost" onClick={exportJson}>⬇ Exportar JSON</button>
+      <section className="card p-6">
+        <div className="text-[13.5px] font-semibold mb-1">Datos</div>
+        <div className="text-xs text-text-3 mb-4">Respaldo y sincronización en la nube</div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button className="btn-ghost" onClick={exportJson}><IconDownload size={15} /> Exportar JSON</button>
           <label className="btn-ghost cursor-pointer">
-            ⬆ Importar JSON
+            <IconUpload size={15} /> Importar JSON
             <input type="file" accept="application/json" className="hidden" onChange={importJson} />
           </label>
+          <div className="flex-1" />
           <button
             className="btn-danger"
             onClick={() => setDialog({
@@ -133,8 +142,7 @@ export default function TarjetasAdmin({ f }) {
               danger: true,
               onConfirm: () => f.resetAll(),
             })}
-          >Reset completo</button>
-          <span className="text-xs text-slate-400 ml-auto">Datos sincronizados en la nube</span>
+          ><IconTrash size={15} /> Reset completo</button>
         </div>
       </section>
 
@@ -158,7 +166,7 @@ export default function TarjetasAdmin({ f }) {
               {COLORS.map((c) => (
                 <button key={c} type="button" onClick={() => setColor(c)}
                   className="h-8 w-8 rounded-full border-2 transition-transform hover:scale-110"
-                  style={{ background: c, borderColor: color === c ? 'white' : 'transparent' }} />
+                  style={{ background: c, borderColor: color === c ? 'var(--text)' : 'transparent' }} />
               ))}
               <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-8 w-10 rounded bg-transparent cursor-pointer" title="Color personalizado" />
             </div>

@@ -1,5 +1,5 @@
 export function Skeleton({ className = '' }) {
-  return <div className={`animate-pulse bg-slate-800/60 rounded ${className}`} />;
+  return <div className={`animate-pulse bg-surface-2 rounded ${className}`} />;
 }
 
 export function SkeletonCard({ className = '', children }) {
@@ -22,16 +22,16 @@ export function MesSkeleton() {
         </div>
       </SkeletonCard>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-24 rounded-card" />
+        <Skeleton className="h-24 rounded-card" />
+        <Skeleton className="h-24 rounded-card" />
+        <Skeleton className="h-24 rounded-card" />
       </div>
       <SkeletonCard>
         <Skeleton className="h-4 w-32 mb-3" />
         <Skeleton className="h-3 w-full" />
       </SkeletonCard>
-      <Skeleton className="h-64 rounded-2xl" />
+      <Skeleton className="h-64 rounded-card" />
     </div>
   );
 }

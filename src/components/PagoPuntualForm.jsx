@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fmtMonto, parseMonto } from '../utils/format';
 
 export default function PagoPuntualForm({ tarjetas, mesYM, onAdd, onClose }) {
   const [tarjetaId, setTarjetaId] = useState('');
@@ -7,13 +8,13 @@ export default function PagoPuntualForm({ tarjetas, mesYM, onAdd, onClose }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!tarjetaId || !descripcion || !monto) return;
-    onAdd({ tarjetaId, descripcion, monto: Number(monto) || 0, mesYM });
+    if (!tarjetaId || !descripcion || !parseMonto(monto)) return;
+    onAdd({ tarjetaId, descripcion, monto: parseMonto(monto), mesYM });
     onClose?.();
   };
 
   return (
-    <form onSubmit={submit} className="card p-4 space-y-3 bg-panel2">
+    <form onSubmit={submit} className="space-y-3">
       <div className="grid sm:grid-cols-3 gap-3">
         <div>
           <label className="label">Tarjeta / cuenta</label>
@@ -28,7 +29,7 @@ export default function PagoPuntualForm({ tarjetas, mesYM, onAdd, onClose }) {
         </div>
         <div>
           <label className="label">Monto</label>
-          <input type="number" className="input mt-1" value={monto} onChange={(e) => setMonto(e.target.value)} required />
+          <input type="text" inputMode="numeric" className="input mt-1" value={monto} onChange={(e) => setMonto(fmtMonto(e.target.value))} placeholder="$" required />
         </div>
       </div>
       <div className="flex justify-end gap-2">

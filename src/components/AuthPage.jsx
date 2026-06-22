@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { TrendLogo, IconArrowRight } from './icons';
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -36,98 +37,88 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="card w-full max-w-md p-8">
-        {/* Logo / Título */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            💰 Finanzas
+    <div className="min-h-screen flex items-center justify-center px-8 bg-bg text-text">
+      <div className="w-full max-w-[392px]">
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-[38px] h-[38px] rounded-[10px] bg-accent grid place-items-center text-white">
+            <TrendLogo size={20} />
+          </div>
+          <div>
+            <div className="font-semibold text-base tracking-[-0.01em]">Balance</div>
+            <div className="text-xs text-text-3">Gestión financiera personal</div>
+          </div>
+        </div>
+
+        <div className="card p-[30px]">
+          <h1 className="text-xl font-semibold tracking-[-0.02em] mb-1">
+            {mode === 'login' ? 'Ingresa a tu cuenta' : 'Crea tu cuenta'}
           </h1>
-          <p className="text-slate-400 mt-2 text-sm">
-            Control de gastos y cuotas personales
-          </p>
-        </div>
+          <p className="text-[13.5px] text-text-2 mb-6">Tus datos se sincronizan de forma segura en la nube.</p>
 
-        {/* Tabs */}
-        <div className="flex rounded-lg bg-ink overflow-hidden mb-6 border border-white/10">
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setError(''); setInfo(''); }}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              mode === 'login'
-                ? 'bg-accent/20 text-accent'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Iniciar sesión
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('register'); setError(''); setInfo(''); }}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              mode === 'register'
-                ? 'bg-accent/20 text-accent'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Registrarse
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="label">Email</label>
-            <input
-              type="email"
-              className="input w-full"
-              placeholder="tu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+          {/* Tabs login/registro */}
+          <div className="inline-flex gap-[3px] bg-surface-2 border border-border rounded-[10px] p-1 mb-5 w-full">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(''); setInfo(''); }}
+              className={`flex-1 py-2 rounded-md text-[13px] font-medium transition-all ${mode === 'login' ? 'bg-surface text-text shadow-card' : 'text-text-2'}`}
+            >Iniciar sesión</button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setError(''); setInfo(''); }}
+              className={`flex-1 py-2 rounded-md text-[13px] font-medium transition-all ${mode === 'register' ? 'bg-surface text-text shadow-card' : 'text-text-2'}`}
+            >Registrarse</button>
           </div>
 
-          <div>
-            <label className="label">Contraseña</label>
-            <input
-              type="password"
-              className="input w-full"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <div className="label mb-1.5">Correo</div>
+              <input
+                type="email"
+                className="input !h-[42px]"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
 
-          {error && (
-            <p className="text-rose-400 text-sm bg-rose-400/10 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
+            <div>
+              <div className="label mb-1.5">Contraseña</div>
+              <input
+                type="password"
+                className="input !h-[42px]"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              />
+            </div>
 
-          {info && (
-            <p className="text-accent text-sm bg-accent/10 rounded-lg px-3 py-2">
-              {info}
-            </p>
-          )}
+            {error && (
+              <p className="text-negative text-sm rounded-[10px] px-3 py-2" style={{ background: 'color-mix(in srgb, var(--negative) 10%, transparent)' }}>
+                {error}
+              </p>
+            )}
+            {info && (
+              <p className="text-accent text-sm rounded-[10px] px-3 py-2" style={{ background: 'var(--accent-tint)' }}>
+                {info}
+              </p>
+            )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary w-full py-2.5 disabled:opacity-50"
-          >
-            {submitting
-              ? 'Cargando...'
-              : mode === 'login'
-                ? 'Iniciar sesión'
-                : 'Crear cuenta'
-            }
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary w-full !h-[44px] disabled:opacity-50"
+            >
+              {submitting ? 'Cargando…' : mode === 'login' ? 'Ingresar' : 'Crear cuenta'}
+              {!submitting && <IconArrowRight size={17} />}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,34 +1,26 @@
-import { useState } from 'react';
-import { monthLabel } from '../utils/format';
 import { useResumenMes } from '../store';
 import SegmentedTabs from './SegmentedTabs';
 import ResumenTab from './ResumenTab';
 import GastosTab from './GastosTab';
 import SueldoBlock from './SueldoBlock';
 import ComprasCompartidas from './ComprasCompartidas';
+import { IconChart, IconUp, IconCard, IconUsers } from './icons';
 
-export default function MesView({ ym, f }) {
+export default function MesView({ ym, f, tab, setTab, registerSignal }) {
   const resumen = useResumenMes(f.state, ym);
-  const [tab, setTab] = useState('resumen');
   const tarjetasActivas = f.state.tarjetas.filter((t) => !t.archivada);
 
   const numItems = Object.values(resumen.porTarjeta).reduce((a, b) => a + b.items.length, 0);
   const tabs = [
-    { k: 'resumen',     label: 'Resumen',     icon: '📊' },
-    { k: 'ingresos',    label: 'Ingresos',    icon: '💰' },
-    { k: 'gastos',      label: 'Gastos',      icon: '💳', badge: numItems || null },
-    { k: 'compartidas', label: 'Compartidas', icon: '👥', badge: resumen.compartidas.length || null },
+    { k: 'resumen',     label: 'Resumen',     icon: <IconChart size={16} /> },
+    { k: 'ingresos',    label: 'Ingresos',    icon: <IconUp size={16} /> },
+    { k: 'gastos',      label: 'Gastos',      icon: <IconCard size={16} />,  badge: numItems || null },
+    { k: 'compartidas', label: 'Compartidas', icon: <IconUsers size={16} />, badge: resumen.compartidas.length || null },
   ];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{monthLabel(ym)}</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Vista detallada del mes</p>
-        </div>
-        <SegmentedTabs tabs={tabs} value={tab} onChange={setTab} />
-      </div>
+    <div className="flex flex-col gap-[var(--section-gap)]">
+      <SegmentedTabs tabs={tabs} value={tab} onChange={setTab} />
 
       {tab === 'resumen' && (
         <div className="animate-fadein">
@@ -51,7 +43,7 @@ export default function MesView({ ym, f }) {
 
       {tab === 'gastos' && (
         <div className="animate-fadein">
-          <GastosTab ym={ym} f={f} resumen={resumen} tarjetasActivas={tarjetasActivas} personas={f.state.personas || []} />
+          <GastosTab ym={ym} f={f} resumen={resumen} tarjetasActivas={tarjetasActivas} personas={f.state.personas || []} registerSignal={registerSignal} />
         </div>
       )}
 

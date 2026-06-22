@@ -1,15 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import TarjetaBloque from './TarjetaBloque';
 import CompraForm from './CompraForm';
 import PagoPuntualForm from './PagoPuntualForm';
 import Modal from './Modal';
 import { fmt } from '../utils/format';
+import { IconPlus } from './icons';
 
-export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = [] }) {
+export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = [], registerSignal = 0 }) {
   const [mode, setMode] = useState(null); // null | 'compra' | 'pago'
   const [editing, setEditing] = useState(null); // compra en edición
   const [filterTarjeta, setFilterTarjeta] = useState('');
   const [search, setSearch] = useState('');
+
+  // El botón "Registrar" del header abre el modal de nueva compra.
+  useEffect(() => {
+    if (registerSignal > 0) setMode('compra');
+  }, [registerSignal]);
 
   const startEdit = (c) => {
     setEditing(c);
@@ -42,12 +48,12 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
   const totalFiltrado = bloques.reduce((a, b) => a + b.items.reduce((aa, it) => aa + it.valorCuota, 0), 0);
 
   return (
-    <div className="space-y-4 animate-fadein">
+    <div className="flex flex-col gap-4">
       <section className="card p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px]">
           <input
             className="input"
-            placeholder="🔍  Buscar descripción…"
+            placeholder="Buscar descripción…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -62,13 +68,17 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
             <option key={b.tarjeta.id} value={b.tarjeta.id}>{b.tarjeta.nombre}</option>
           ))}
         </select>
-        <div className="text-xs text-slate-400">
-          {bloques.reduce((a, b) => a + b.items.length, 0)} item(s) · <span className="text-cyan-300 font-semibold">{fmt(totalFiltrado)}</span>
+        <div className="text-xs text-text-3">
+          {bloques.reduce((a, b) => a + b.items.length, 0)} item(s) · <span className="num text-accent font-semibold">{fmt(totalFiltrado)}</span>
         </div>
         <div className="flex-1" />
         <div className="flex gap-2">
-          <button className="btn-ghost" onClick={() => setMode(mode === 'pago' ? null : 'pago')}>+ Pago puntual</button>
-          <button className="btn-primary" onClick={() => setMode(mode === 'compra' ? null : 'compra')}>+ Compra en cuotas</button>
+          <button className="btn-ghost" onClick={() => setMode(mode === 'pago' ? null : 'pago')}>
+            <IconPlus size={15} /> Pago puntual
+          </button>
+          <button className="btn-primary" onClick={() => setMode(mode === 'compra' ? null : 'compra')}>
+            <IconPlus size={15} /> Compra en cuotas
+          </button>
         </div>
       </section>
 
@@ -102,15 +112,15 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
         </div>
       </Modal>
 
-      <div className="space-y-4">
-        {bloques.length === 0 ? (
-          <div className="card p-8 text-center text-sm text-slate-400">
-            {search || filterTarjeta
-              ? 'Sin resultados para los filtros aplicados.'
-              : 'Sin gastos registrados este mes. Agrega una compra o pago puntual.'}
-          </div>
-        ) : (
-          bloques.map((b) => (
+      {bloques.length === 0 ? (
+        <div className="card p-8 text-center text-sm text-text-3">
+          {search || filterTarjeta
+            ? 'Sin resultados para los filtros aplicados.'
+            : 'Sin gastos registrados este mes. Agrega una compra o pago puntual.'}
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {bloques.map((b) => (
             <TarjetaBloque
               key={b.tarjeta.id}
               bloque={b}
@@ -121,9 +131,9 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
               onEditCompra={startEdit}
               updateCompra={f.updateCompra}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

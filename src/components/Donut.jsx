@@ -5,12 +5,12 @@ function CustomTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/95 backdrop-blur px-3 py-2 text-xs shadow-xl">
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-card">
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 rounded-full" style={{ background: d.color }} />
-        <span className="font-medium text-white">{d.name}</span>
+        <span className="font-medium text-text">{d.name}</span>
       </div>
-      <div className="mt-1 text-slate-300">{fmt(d.value)} <span className="text-slate-500">· {d.pct.toFixed(1)}%</span></div>
+      <div className="mt-1 num text-text-2">{fmt(d.value)} <span className="text-text-3">· {d.pct.toFixed(1)}%</span></div>
     </div>
   );
 }
@@ -18,7 +18,7 @@ function CustomTooltip({ active, payload }) {
 export default function Donut({ data, total, label = 'Total', subLabel }) {
   if (!data.length || total === 0) {
     return (
-      <div className="flex items-center justify-center h-[220px] text-sm text-slate-500">
+      <div className="flex items-center justify-center h-[220px] text-sm text-text-3">
         Sin datos para graficar
       </div>
     );
@@ -48,9 +48,9 @@ export default function Donut({ data, total, label = 'Total', subLabel }) {
       </ResponsiveContainer>
       <div className="absolute inset-0 grid place-items-center pointer-events-none">
         <div className="text-center">
-          <div className="text-[10px] uppercase tracking-wider text-slate-400">{label}</div>
-          <div className="text-xl font-bold text-white">{fmt(total)}</div>
-          {subLabel && <div className="text-[10px] text-slate-500 mt-0.5">{subLabel}</div>}
+          <div className="text-[10.5px] uppercase tracking-[0.06em] text-text-3">{label}</div>
+          <div className="num text-[15px] font-semibold text-text">{fmt(total)}</div>
+          {subLabel && <div className="text-[10px] text-text-3 mt-0.5">{subLabel}</div>}
         </div>
       </div>
     </div>

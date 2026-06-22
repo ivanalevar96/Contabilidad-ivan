@@ -82,6 +82,9 @@ export function cuotaDelMes(compra, ym) {
   if (!compra.mesInicio) return null;
   const n = monthsBetween(compra.mesInicio, ym) + 1;
   if (n < 1 || n > (compra.cantCuotas || 0)) return null;
+  // Finalizada anticipadamente (ej: prepago del crédito): las cuotas posteriores
+  // al mes de corte dejan de mostrarse. El total de cuotas original se conserva.
+  if (compra.mesFinAnticipado && ym > compra.mesFinAnticipado) return null;
   return { numCuota: n, valorCuota: Number(compra.valorCuota) || 0 };
 }
 
@@ -212,6 +215,7 @@ export function useFinanzas(userId) {
       valorPorPersona: null,
       esSubscripcion: false,
       mesFin: null,
+      mesFinAnticipado: null,
       periodos: [],
       ...c,
       valorCuota: Math.round(valorCuota),

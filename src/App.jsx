@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Toaster } from 'sonner';
 import { useAuth } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
-import TopBar from './components/TopBar';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 import MesView from './components/MesView';
 import AnnualView from './components/AnnualView';
 import TarjetasAdmin from './components/TarjetasAdmin';
@@ -10,44 +11,80 @@ import { MesSkeleton } from './components/Skeleton';
 import { useFinanzas } from './store';
 import { currentYM, yearOf } from './utils/format';
 
+function useTheme() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  const toggle = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), []);
+  return { theme, toggle };
+}
+
 export default function App() {
   const { user, signOut } = useAuth();
   const f = useFinanzas(user?.id);
+  const { theme, toggle } = useTheme();
   const [view, setView] = useState('mes');
   const [ym, setYM] = useState(currentYM());
   const [year, setYear] = useState(yearOf(currentYM()));
+  const [mesTab, setMesTab] = useState('resumen');
+  const [registerSignal, setRegisterSignal] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Navegar cierra el drawer en móvil.
+  const navigate = useCallback((v) => { setView(v); setSidebarOpen(false); }, []);
+
+  const onRegister = useCallback(() => {
+    setView('mes');
+    setMesTab('gastos');
+    setRegisterSignal((s) => s + 1);
+  }, []);
+
+  const maxW = view === 'conf' ? 'max-w-[760px]' : 'max-w-[1080px]';
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen">
-        {f.syncError && (
-          <div className="bg-rose-500/20 border-b border-rose-500/30 px-4 py-2 text-center text-sm text-rose-300 flex items-center justify-center gap-3">
-            <span>{f.syncError}</span>
-            <button onClick={f.clearSyncError} className="text-rose-400 hover:text-white underline text-xs">Cerrar</button>
-          </div>
-        )}
-        <TopBar
-          view={view} setView={setView}
-          ym={ym} setYM={setYM}
-          year={year} setYear={setYear}
+    <AuthGuard theme={theme}>
+      <div className="h-screen flex bg-bg text-text">
+        <Sidebar
+          view={view} setView={navigate}
+          theme={theme} toggleTheme={toggle}
           user={user} onSignOut={signOut}
+          open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          {f.loading ? (
-            <MesSkeleton />
-          ) : (
-            <div key={view} className="animate-fadein">
-              {view === 'mes'  && <MesView ym={ym} f={f} />}
-              {view === 'anio' && <AnnualView year={year} f={f} onPickMonth={(m) => { setYM(m); setView('mes'); }} />}
-              {view === 'conf' && <TarjetasAdmin f={f} />}
+
+        <div className="flex-1 min-w-0 flex flex-col">
+          {f.syncError && (
+            <div className="bg-[color-mix(in_srgb,var(--negative)_15%,transparent)] border-b border-border px-4 py-2 text-center text-sm text-negative flex items-center justify-center gap-3">
+              <span>{f.syncError}</span>
+              <button onClick={f.clearSyncError} className="underline text-xs hover:opacity-80">Cerrar</button>
             </div>
           )}
-        </main>
-        <footer className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 text-center text-xs text-slate-500">
-          Finanzas · datos sincronizados en la nube · usa Exportar para respaldo
-        </footer>
+
+          <Header
+            view={view}
+            ym={ym} setYM={setYM}
+            year={year} setYear={setYear}
+            onRegister={onRegister}
+            onMenu={() => setSidebarOpen(true)}
+          />
+
+          <main className="flex-1 overflow-y-auto p-4 sm:p-7">
+            <div className={`${maxW} mx-auto`}>
+              {f.loading ? (
+                <MesSkeleton />
+              ) : (
+                <div key={view} className="animate-fadein">
+                  {view === 'mes'  && <MesView ym={ym} f={f} tab={mesTab} setTab={setMesTab} registerSignal={registerSignal} />}
+                  {view === 'anio' && <AnnualView year={year} f={f} onPickMonth={(m) => { setYM(m); setView('mes'); }} />}
+                  {view === 'conf' && <TarjetasAdmin f={f} />}
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
       </div>
-      <Toaster position="bottom-right" theme="dark" richColors closeButton />
+      <Toaster position="bottom-right" theme={theme} richColors closeButton />
     </AuthGuard>
   );
 }

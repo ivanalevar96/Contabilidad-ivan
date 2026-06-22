@@ -52,3 +52,14 @@ export const currentYM = () => {
 export const yearOf = (ym) => Number(ym.split('-')[0]);
 
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+
+/** Formatea un string con dígitos como input monetario: "1444949" → "$1.444.949" */
+export const fmtMonto = (raw) => {
+  const digits = String(raw).replace(/\D/g, '');
+  if (!digits) return '';
+  return '$' + Number(digits).toLocaleString('es-CL');
+};
+
+/** Extrae el número de un valor formateado: "$1.444.949" → 1444949 */
+export const parseMonto = (formatted) =>
+  Number(String(formatted).replace(/\D/g, '')) || 0;

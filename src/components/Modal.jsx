@@ -37,13 +37,13 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className={`w-full ${widths[size] || widths.md} rounded-xl border border-slate-700 bg-slate-900 shadow-2xl ${closing ? 'animate-modal-out' : 'animate-modal-in'}`}>
+      <div className={`w-full ${widths[size] || widths.md} rounded-card border border-border bg-surface shadow-card ${closing ? 'animate-modal-out' : 'animate-modal-in'}`}>
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-            <h2 className="text-base font-semibold text-slate-100">{title}</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h2 className="text-base font-semibold text-text">{title}</h2>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors text-lg leading-none"
+              className="text-text-3 hover:text-text transition-colors text-lg leading-none"
               aria-label="Cerrar"
             >✕</button>
           </div>

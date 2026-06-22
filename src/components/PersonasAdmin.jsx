@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import Modal from './Modal';
 import ConfirmModal from './ConfirmModal';
+import { IconPlus, IconPencil } from './icons';
 
 const COLORS = [
-  '#fb7185', '#f97316', '#f59e0b', '#a3e635',
-  '#34d399', '#22d3ee', '#60a5fa', '#a78bfa', '#f472b6',
+  '#0d9488', '#0f766e', '#c9a04a', '#64748b',
+  '#94a3b8', '#fb7185', '#f59e0b', '#a78bfa', '#60a5fa',
 ];
 
 const PREFIX = '+569';
@@ -37,7 +38,7 @@ function ColorPicker({ value, onChange }) {
           type="button"
           onClick={() => onChange(c)}
           className="h-8 w-8 rounded-full border-2 transition-transform hover:scale-110"
-          style={{ background: c, borderColor: value === c ? 'white' : 'transparent' }}
+          style={{ background: c, borderColor: value === c ? 'var(--text)' : 'transparent' }}
         />
       ))}
     </div>
@@ -90,28 +91,30 @@ export default function PersonasAdmin({ f }) {
   };
 
   return (
-    <section className="card p-5">
+    <section className="card p-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-base font-semibold">Personas para compras compartidas</h2>
-        <button className="btn-primary text-sm" onClick={() => { resetAdd(); setShowAdd(true); }}>+ Agregar</button>
+        <h2 className="text-[13.5px] font-semibold">Personas para compras compartidas</h2>
+        <button className="btn-primary !h-9 !px-3.5" onClick={() => { resetAdd(); setShowAdd(true); }}><IconPlus size={15} /> Agregar</button>
       </div>
-      <p className="text-xs text-slate-400 mb-4">
+      <p className="text-xs text-text-3 mb-4">
         Agrega las personas con quienes dividís gastos. Podrás seleccionarlas al registrar una compra compartida.
       </p>
 
-      <div className="grid gap-2">
+      <div className="flex flex-col gap-2">
         {personas.length === 0 && (
-          <div className="text-sm text-slate-500 py-2">Sin personas todavía.</div>
+          <div className="text-sm text-text-3 py-2">Sin personas todavía.</div>
         )}
         {personas.map((p) => (
-          <div key={p.id} className="flex items-center gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
-            <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: p.color }} />
+          <div key={p.id} className="flex items-center gap-3 bg-surface-2 border border-border rounded-[11px] px-3.5 py-3">
+            <span className="h-[30px] w-[30px] rounded-full flex-shrink-0 grid place-items-center text-[12px] font-semibold text-white" style={{ background: p.color }}>
+              {p.nombre.slice(0, 1).toUpperCase()}
+            </span>
             <div className="flex-1 min-w-0">
-              <div className="text-slate-100 text-sm">{p.nombre}</div>
-              {p.telefono && <div className="text-xs text-slate-500">{p.telefono}</div>}
+              <div className="text-text text-[13.5px] font-medium">{p.nombre}</div>
+              {p.telefono && <div className="text-xs text-text-3">{p.telefono}</div>}
             </div>
-            <button className="text-slate-400 hover:text-cyan-300 transition-colors text-sm" onClick={() => setEditingPersona(p)} title="Editar">✎</button>
-            <button className="text-rose-400 hover:text-rose-300 transition-colors text-sm" onClick={() => setRemoveConfirm(p)} title="Eliminar">✕</button>
+            <button className="text-text-3 hover:text-accent transition-colors" onClick={() => setEditingPersona(p)} title="Editar"><IconPencil size={15} /></button>
+            <button className="text-text-3 hover:text-negative transition-colors" onClick={() => setRemoveConfirm(p)} title="Eliminar">✕</button>
           </div>
         ))}
       </div>
@@ -122,25 +125,25 @@ export default function PersonasAdmin({ f }) {
           <div>
             <div className="label mb-1.5">Nombre</div>
             <input
-              className={`input ${nombreError ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30' : ''}`}
+              className={`input ${nombreError ? '!border-negative' : ''}`}
               placeholder="Ej: Cynthia, Juan…"
               value={nombre}
               onChange={(e) => { setNombre(sanitizeNombre(e.target.value)); setNombreError(''); }}
               autoFocus
             />
-            {nombreError && <p className="text-xs text-rose-400 mt-1">{nombreError}</p>}
+            {nombreError && <p className="text-xs text-negative mt-1">{nombreError}</p>}
           </div>
           <div>
-            <div className="label mb-1.5">Teléfono <span className="text-slate-500 normal-case font-normal">(opcional)</span></div>
+            <div className="label mb-1.5">Teléfono <span className="text-text-3 normal-case font-normal">(opcional)</span></div>
             <input
               type="tel"
-              className={`input ${telefonoError ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30' : ''}`}
+              className={`input ${telefonoError ? '!border-negative' : ''}`}
               value={telefono}
               onChange={(e) => { setTelefono(handlePhoneInput(e.target.value)); setTelefonoError(''); }}
             />
             {telefonoError
-              ? <p className="text-xs text-rose-400 mt-1">{telefonoError}</p>
-              : <p className="text-xs text-slate-500 mt-1">Ingresa los 8 dígitos después del prefijo +569</p>
+              ? <p className="text-xs text-negative mt-1">{telefonoError}</p>
+              : <p className="text-xs text-text-3 mt-1">Ingresa los 8 dígitos después del prefijo +569</p>
             }
           </div>
           <div>
@@ -228,24 +231,24 @@ function EditPersonaModal({ open, persona, onClose, onSave }) {
         <div>
           <div className="label mb-1.5">Nombre</div>
           <input
-            className={`input ${nombreError ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30' : ''}`}
+            className={`input ${nombreError ? '!border-negative' : ''}`}
             value={nombre}
             onChange={(e) => { setNombre(sanitizeNombre(e.target.value)); setNombreError(''); }}
             autoFocus
           />
-          {nombreError && <p className="text-xs text-rose-400 mt-1">{nombreError}</p>}
+          {nombreError && <p className="text-xs text-negative mt-1">{nombreError}</p>}
         </div>
         <div>
-          <div className="label mb-1.5">Teléfono <span className="text-slate-500 normal-case font-normal">(opcional)</span></div>
+          <div className="label mb-1.5">Teléfono <span className="text-text-3 normal-case font-normal">(opcional)</span></div>
           <input
             type="tel"
-            className={`input ${telefonoError ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30' : ''}`}
+            className={`input ${telefonoError ? '!border-negative' : ''}`}
             value={telefono}
             onChange={(e) => { setTelefono(handlePhoneInput(e.target.value)); setTelefonoError(''); }}
           />
           {telefonoError
-            ? <p className="text-xs text-rose-400 mt-1">{telefonoError}</p>
-            : <p className="text-xs text-slate-500 mt-1">Ingresa los 8 dígitos después del prefijo +569</p>
+            ? <p className="text-xs text-negative mt-1">{telefonoError}</p>
+            : <p className="text-xs text-text-3 mt-1">Ingresa los 8 dígitos después del prefijo +569</p>
           }
         </div>
         <div>

@@ -1,22 +1,23 @@
 import { fmt } from '../utils/format';
+import { IconArrowUp, IconArrowDown } from './icons';
 
-export default function KpiCard({ label, value, sub, accent = 'cyan', icon }) {
-  const accents = {
-    cyan:  'from-cyan-500/20 to-cyan-500/5 text-cyan-300 border-cyan-500/20',
-    green: 'from-emerald-500/20 to-emerald-500/5 text-emerald-300 border-emerald-500/20',
-    rose:  'from-rose-500/20 to-rose-500/5 text-rose-300 border-rose-500/20',
-    amber: 'from-amber-500/20 to-amber-500/5 text-amber-300 border-amber-500/20',
-  };
+export default function KpiCard({ label, value, sub, icon, accent = false, variation }) {
   return (
-    <div className={`card p-4 bg-gradient-to-br ${accents[accent]}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="label">{label}</div>
-          <div className="mt-1 text-2xl font-bold text-white">{typeof value === 'number' ? fmt(value) : value}</div>
-          {sub && <div className="mt-1 text-xs text-slate-400">{sub}</div>}
-        </div>
-        {icon && <div className="text-2xl opacity-80">{icon}</div>}
+    <div className="card p-4 sm:p-6">
+      <div className="flex items-center gap-2 text-text-3 text-xs font-medium">
+        {icon}
+        {label}
       </div>
+      <div className={`mt-3 num text-xl sm:text-2xl font-semibold tracking-[-0.02em] truncate ${accent ? 'text-accent' : 'text-text'}`}>
+        {typeof value === 'number' ? fmt(value) : value}
+      </div>
+      {variation && (
+        <div className={`mt-1.5 text-xs flex items-center gap-1 ${variation.positive ? 'text-positive' : 'text-negative'}`}>
+          {variation.up ? <IconArrowUp size={13} /> : <IconArrowDown size={13} />}
+          {variation.label}
+        </div>
+      )}
+      {sub && !variation && <div className="mt-1.5 text-xs text-text-3">{sub}</div>}
     </div>
   );
 }
