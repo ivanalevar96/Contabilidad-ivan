@@ -138,6 +138,7 @@ export async function loadAllData(userId) {
     tipo: t.tipo,
     color: t.color,
     archivada: !!t.archivada,
+    fotoUrl: t.foto_url || null,
   }));
 
   // Sueldos: filas → diccionario { 'YYYY-MM': { sueldo, ingresosExtra } }
@@ -161,6 +162,7 @@ export async function loadAllData(userId) {
     nombre: p.nombre,
     color: p.color,
     telefono: p.telefono || null,
+    fotoUrl: p.foto_url || null,
   }));
 
   // Liquidaciones: si la tabla no existe en BD aún, fallamos suave devolviendo [].
@@ -181,6 +183,7 @@ export async function saveTarjeta(userId, t) {
     tipo: t.tipo,
     color: t.color,
     archivada: !!t.archivada,
+    foto_url: t.fotoUrl || null,
   });
   if (error) throw error;
 }
@@ -218,6 +221,7 @@ export async function updateTarjetaDb(userId, id, patch) {
   if (patch.tipo != null) updates.tipo = patch.tipo;
   if (patch.color != null) updates.color = patch.color;
   if (patch.archivada != null) updates.archivada = !!patch.archivada;
+  if (patch.fotoUrl !== undefined) updates.foto_url = patch.fotoUrl;
 
   const { error } = await supabase
     .from('tarjetas')
@@ -280,6 +284,7 @@ export async function savePersona(userId, p) {
     nombre: p.nombre,
     color: p.color || '#64748b',
     telefono: p.telefono || null,
+    foto_url: p.fotoUrl || null,
   });
   if (error) throw error;
 }

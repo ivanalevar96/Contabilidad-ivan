@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import TarjetaBloque from './TarjetaBloque';
 import CompraForm from './CompraForm';
-import PagoPuntualForm from './PagoPuntualForm';
 import Modal from './Modal';
 import { fmt } from '../utils/format';
 import { IconPlus } from './icons';
@@ -72,14 +71,9 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
           {bloques.reduce((a, b) => a + b.items.length, 0)} item(s) · <span className="num text-accent font-semibold">{fmt(totalFiltrado)}</span>
         </div>
         <div className="flex-1" />
-        <div className="flex gap-2">
-          <button className="btn-ghost" onClick={() => setMode(mode === 'pago' ? null : 'pago')}>
-            <IconPlus size={15} /> Pago puntual
-          </button>
-          <button className="btn-primary" onClick={() => setMode(mode === 'compra' ? null : 'compra')}>
-            <IconPlus size={15} /> Compra en cuotas
-          </button>
-        </div>
+        <button className="btn-primary" onClick={() => setMode(mode === 'compra' ? null : 'compra')}>
+          <IconPlus size={15} /> Agregar compra
+        </button>
       </section>
 
       {/* Modal: editar compra existente */}
@@ -105,18 +99,11 @@ export default function GastosTab({ ym, f, resumen, tarjetasActivas, personas = 
         </div>
       </Modal>
 
-      {/* Modal: pago puntual */}
-      <Modal open={mode === 'pago'} onClose={() => setMode(null)} title="Pago puntual">
-        <div className="p-4">
-          <PagoPuntualForm tarjetas={tarjetasActivas} mesYM={ym} onAdd={(p) => { f.addPagoPuntual(p); setMode(null); }} onClose={() => setMode(null)} />
-        </div>
-      </Modal>
-
       {bloques.length === 0 ? (
         <div className="card p-8 text-center text-sm text-text-3">
           {search || filterTarjeta
             ? 'Sin resultados para los filtros aplicados.'
-            : 'Sin gastos registrados este mes. Agrega una compra o pago puntual.'}
+            : 'Sin gastos registrados este mes. Agrega una compra.'}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

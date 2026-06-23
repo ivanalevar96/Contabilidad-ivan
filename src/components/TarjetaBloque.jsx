@@ -5,6 +5,43 @@ import PromptModal from './PromptModal';
 import Modal from './Modal';
 import { IconPencil, IconPause, IconRefresh, IconStop, IconTrash, IconCheck } from './icons';
 
+function avatarTextColor(hex) {
+  const h = (hex || '#64748b').replace('#', '');
+  if (h.length !== 6) return '#fff';
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b > 0.6 ? '#1e293b' : '#fff';
+}
+
+function TarjetaAvatar({ tarjeta, size = 44 }) {
+  if (tarjeta.fotoUrl) {
+    return (
+      <img
+        src={tarjeta.fotoUrl}
+        alt={tarjeta.nombre}
+        className="object-cover flex-shrink-0"
+        style={{ width: size, height: size, borderRadius: tarjeta.tipo === 'persona' ? '50%' : 10 }}
+      />
+    );
+  }
+  const bg = tarjeta.color || '#64748b';
+  return (
+    <span
+      className="flex-shrink-0 grid place-items-center font-semibold"
+      style={{
+        width: size, height: size,
+        borderRadius: tarjeta.tipo === 'persona' ? '50%' : 10,
+        background: bg,
+        color: avatarTextColor(bg),
+        fontSize: size * 0.38,
+      }}
+    >
+      {tarjeta.nombre.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
 /* ── Card de tarjeta (padre) ──────────────────────────── */
 export default function TarjetaBloque({ bloque, ym, toggleRevisado, removeCompra, removePagoPuntual, onEditCompra, updateCompra }) {
   const { tarjeta, items, total } = bloque;
@@ -99,25 +136,56 @@ export default function TarjetaBloque({ bloque, ym, toggleRevisado, removeCompra
       {/* Card clickeable */}
       <button
         onClick={() => setOpen(true)}
-        className="card text-left p-0 overflow-hidden hover:shadow-md hover:border-accent/40 transition-all duration-150 active:scale-[0.99] group w-full"
+        className="card text-left p-0 overflow-hidden hover:shadow-md hover:border-accent/40 transition-all duration-150 active:scale-[0.99] group w-full flex flex-col"
       >
-        {/* Barra de color */}
-        <div className="h-[4px] w-full" style={{ background: color }} />
-
-        <div className="p-5">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-[15px]">{tarjeta.nombre}</span>
+        {tarjeta.fotoUrl ? (
+          /* ── Banner con foto ── */
+          <div className="relative overflow-hidden" style={{ height: 140 }}>
+            <img
+              src={tarjeta.fotoUrl}
+              alt={tarjeta.nombre}
+              className="w-full h-full object-cover"
+            />
+            {/* Gradiente difuminado hacia el fondo de la card */}
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(to bottom, transparent 15%, var(--surface) 95%)' }}
+            />
+            {/* Nombre + chip sobre el gradiente */}
+            <div className="absolute bottom-0 left-0 right-0 px-5 pb-3">
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <div className="font-semibold text-[15px] leading-snug truncate">{tarjeta.nombre}</div>
+                <span className="text-xs text-text-3 flex-shrink-0">
+                  {items.length} item{items.length !== 1 ? 's' : ''}
+                </span>
+              </div>
               {tarjeta.tipo === 'persona' && (
                 <span className="chip bg-surface-3 text-text-2">persona</span>
               )}
             </div>
-            <span className="text-xs text-text-3 flex-shrink-0">
-              {items.length} item{items.length !== 1 ? 's' : ''}
-            </span>
           </div>
+        ) : (
+          /* ── Sin foto: barra de color + header con avatar ── */
+          <>
+            <div className="h-[4px] w-full" style={{ background: color }} />
+            <div className="px-5 pt-5 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <TarjetaAvatar tarjeta={tarjeta} size={44} />
+                <div className="min-w-0">
+                  <div className="font-semibold text-[15px] leading-snug truncate">{tarjeta.nombre}</div>
+                  {tarjeta.tipo === 'persona' && (
+                    <span className="chip bg-surface-3 text-text-2 mt-0.5">persona</span>
+                  )}
+                </div>
+              </div>
+              <span className="text-xs text-text-3 flex-shrink-0 mt-0.5">
+                {items.length} item{items.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </>
+        )}
 
+        <div className={tarjeta.fotoUrl ? 'px-5 pb-5' : 'px-5 pb-5 pt-4'}>
           {/* Total */}
           <div className="num text-[28px] font-semibold tracking-[-0.02em] text-text mb-4">
             {fmt(total)}
@@ -216,10 +284,10 @@ function TarjetaDetailModal({ open, onClose, bloque, ym, toggleRevisado, onEditC
       title={tarjeta.nombre}
       size="lg"
     >
-      <div className="px-5 pb-5">
+      <div className="px-5 py-5">
         {/* Sub-header: total */}
-        <div className="flex items-center gap-3 mb-5 -mt-1">
-          <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+        <div className="flex items-center gap-3 mb-5">
+          <TarjetaAvatar tarjeta={tarjeta} size={36} />
           {tarjeta.tipo === 'persona' && <span className="chip bg-surface-3 text-text-2">persona</span>}
           <span className="text-text-3 text-sm">Total este mes</span>
           <span className="num font-semibold text-text">{fmt(total)}</span>
@@ -281,8 +349,13 @@ function TarjetaDetailModal({ open, onClose, bloque, ym, toggleRevisado, onEditC
                   <div className="text-right flex-shrink-0">
                     <div className="num font-semibold text-[14px] text-text">{fmt(monto)}</div>
                     <div className="text-[11.5px] text-text-3 num mt-0.5">
-                      {isPuntual ? 'pago único' : isSub ? `mes #${it.numCuota}` : `${it.numCuota} / ${c.cantCuotas}`}
+                      {isPuntual ? 'pago único' : isSub ? `mes #${it.numCuota}` : `cuota ${it.numCuota} / ${c.cantCuotas}`}
                     </div>
+                    {!isPuntual && !isSub && (c.valorConInteres || c.valorCompra) && (
+                      <div className="text-[11px] text-text-3 num mt-0.5">
+                        total {fmt(c.valorConInteres || c.valorCompra)}
+                      </div>
+                    )}
                   </div>
 
                   {/* Acciones */}
