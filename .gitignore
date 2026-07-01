@@ -35,3 +35,10 @@ Thumbs.db
 
 # Secrets
 client_secret*.json
+
+# Local-only content
+.claude/settings.local.json
+/images/
+/Diseño web financiero minimalista/
+/iconos-web/
+/iconos-web.zip

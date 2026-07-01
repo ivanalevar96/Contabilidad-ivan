@@ -1,5 +1,5 @@
 import {
-  TrendLogo, IconCalendar, IconBars, IconCard,
+  IconCalendar, IconBars, IconCard,
   IconSun, IconMoon, IconLogout, IconClose, IconSettings,
 } from './icons';
 
@@ -34,11 +34,9 @@ export default function Sidebar({ view, setView, theme, toggleTheme, user, onSig
       >
         {/* Logo + cerrar (móvil) */}
         <div className="flex items-center gap-3 px-2 pb-[22px] pt-1.5">
-          <div className="w-[34px] h-[34px] rounded-[9px] bg-accent grid place-items-center flex-shrink-0 text-white">
-            <TrendLogo size={18} />
-          </div>
+          <img src="/brand/mark-256.png" alt="UltimaCuota" className="w-[34px] h-[34px] rounded-[9px] flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[15px] tracking-[-0.01em]">Balance</div>
+            <div className="text-[15px] tracking-[-0.01em]"><span className="font-normal">Última</span><span className="font-bold text-[#10b981]">Cuota</span></div>
             <div className="text-[11px] text-text-3">Finanzas personales</div>
           </div>
           <button className="md:hidden text-text-3 hover:text-text transition-colors" onClick={onClose} aria-label="Cerrar menú">

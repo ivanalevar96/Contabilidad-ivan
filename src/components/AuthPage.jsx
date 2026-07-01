@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { TrendLogo, IconArrowRight, IconGoogle } from './icons';
+import { IconArrowRight, IconGoogle } from './icons';
 
 export default function AuthPage() {
   const { signIn, signUp, signInWithGoogle } = useAuth();
@@ -53,11 +53,9 @@ export default function AuthPage() {
       <div className="w-full max-w-[392px]">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-[38px] h-[38px] rounded-[10px] bg-accent grid place-items-center text-white">
-            <TrendLogo size={20} />
-          </div>
+          <img src="/brand/mark-256.png" alt="UltimaCuota" className="w-[38px] h-[38px] rounded-[10px]" />
           <div>
-            <div className="font-semibold text-base tracking-[-0.01em]">Balance</div>
+            <div className="text-base tracking-[-0.01em]"><span className="font-normal">Última</span><span className="font-bold text-[#10b981]">Cuota</span></div>
             <div className="text-xs text-text-3">Gestión financiera personal</div>
           </div>
         </div>
