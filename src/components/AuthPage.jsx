@@ -1,15 +1,27 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { TrendLogo, IconArrowRight } from './icons';
+import { TrendLogo, IconArrowRight, IconGoogle } from './icons';
 
 export default function AuthPage() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogle = async () => {
+    setError('');
+    setInfo('');
+    setGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -118,6 +130,22 @@ export default function AuthPage() {
               {!submitting && <IconArrowRight size={17} />}
             </button>
           </form>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[12px] text-text-3">o continúa con</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={submitting || googleLoading}
+            className="btn-ghost w-full !h-[44px] gap-2.5 disabled:opacity-50"
+          >
+            <IconGoogle size={17} />
+            {googleLoading ? 'Redirigiendo…' : 'Continuar con Google'}
+          </button>
         </div>
       </div>
     </div>

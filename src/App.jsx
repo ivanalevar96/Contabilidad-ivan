@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { useAuth } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import Sidebar from './components/Sidebar';
@@ -7,6 +7,7 @@ import Header from './components/Header';
 import MesView from './components/MesView';
 import AnnualView from './components/AnnualView';
 import TarjetasAdmin from './components/TarjetasAdmin';
+import Settings from './components/Settings';
 import { MesSkeleton } from './components/Skeleton';
 import { useFinanzas } from './store';
 import { currentYM, yearOf } from './utils/format';
@@ -41,7 +42,15 @@ export default function App() {
     setRegisterSignal((s) => s + 1);
   }, []);
 
-  const maxW = view === 'conf' ? 'max-w-[760px]' : 'max-w-[1080px]';
+  useEffect(() => {
+    if (!user || (user.identities?.length ?? 0) < 2) return;
+    const key = `linked-notice-${user.id}`;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+    toast.success('Tu cuenta de Google fue vinculada a tu cuenta existente.');
+  }, [user]);
+
+  const maxW = view === 'conf' || view === 'settings' ? 'max-w-[760px]' : 'max-w-[1080px]';
 
   return (
     <AuthGuard theme={theme}>
@@ -50,6 +59,7 @@ export default function App() {
           view={view} setView={navigate}
           theme={theme} toggleTheme={toggle}
           user={user} onSignOut={signOut}
+          onOpenSettings={() => navigate('settings')}
           open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         />
 
@@ -78,6 +88,7 @@ export default function App() {
                   {view === 'mes'  && <MesView ym={ym} f={f} tab={mesTab} setTab={setMesTab} registerSignal={registerSignal} />}
                   {view === 'anio' && <AnnualView year={year} f={f} onPickMonth={(m) => { setYM(m); setView('mes'); }} />}
                   {view === 'conf' && <TarjetasAdmin f={f} />}
+                  {view === 'settings' && <Settings />}
                 </div>
               )}
             </div>

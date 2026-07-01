@@ -1,7 +1,7 @@
 import { addMonths, monthLabel } from '../utils/format';
 import { IconChevronLeft, IconChevronRight, IconPlus, IconMenu } from './icons';
 
-const TITLES = { mes: 'Resumen mensual', anio: 'Vista anual', conf: 'Tarjetas y cuentas' };
+const TITLES = { mes: 'Resumen mensual', anio: 'Vista anual', conf: 'Tarjetas y cuentas', settings: 'Configuración' };
 
 function NavGroup({ children }) {
   return (

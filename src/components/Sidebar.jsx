@@ -1,6 +1,6 @@
 import {
   TrendLogo, IconCalendar, IconBars, IconCard,
-  IconSun, IconMoon, IconLogout, IconClose,
+  IconSun, IconMoon, IconLogout, IconClose, IconSettings,
 } from './icons';
 
 const NAV = [
@@ -17,7 +17,7 @@ function initialsFromEmail(email) {
   return letters.toUpperCase();
 }
 
-export default function Sidebar({ view, setView, theme, toggleTheme, user, onSignOut, open, onClose }) {
+export default function Sidebar({ view, setView, theme, toggleTheme, user, onSignOut, onOpenSettings, open, onClose }) {
   const isDark = theme === 'dark';
   return (
     <>
@@ -84,6 +84,9 @@ export default function Sidebar({ view, setView, theme, toggleTheme, user, onSig
               <div className="text-[13px] font-medium truncate">{user.email?.split('@')[0]}</div>
               <div className="text-[11px] text-text-3 truncate">{user.email}</div>
             </div>
+            <button onClick={onOpenSettings} title="Configuración" className="text-text-3 hover:text-text transition-colors flex-shrink-0">
+              <IconSettings size={17} />
+            </button>
             <button onClick={onSignOut} title="Cerrar sesión" className="text-text-3 hover:text-negative transition-colors flex-shrink-0">
               <IconLogout size={17} />
             </button>
