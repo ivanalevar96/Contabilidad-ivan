@@ -16,7 +16,7 @@ export default function MesView({ ym, f, tab, setTab, registerSignal }) {
     { k: 'resumen',     label: 'Resumen',     icon: <IconChart size={16} /> },
     { k: 'ingresos',    label: 'Ingresos',    icon: <IconUp size={16} /> },
     { k: 'gastos',      label: 'Gastos',      icon: <IconCard size={16} />,  badge: numItems || null },
-    { k: 'compartidas', label: 'Compartidas', icon: <IconUsers size={16} />, badge: resumen.compartidas.length || null },
+    { k: 'compartidas', label: 'Compartidas', icon: <IconUsers size={16} />, badge: deudas.filter((d) => d.pendiente > 0).length || null },
   ];
 
   return (
@@ -51,7 +51,6 @@ export default function MesView({ ym, f, tab, setTab, registerSignal }) {
       {tab === 'compartidas' && (
         <div className="animate-fadein">
           <ComprasCompartidas
-            compartidas={resumen.compartidas}
             deudas={deudas}
             tarjetas={f.state.tarjetas}
             personas={f.state.personas || []}

@@ -455,10 +455,8 @@ export function useResumenMes(state, ym) {
 }
 
 /**
- * Deuda acumulada por persona en compras compartidas, desde que existe cada
- * compra hasta `ym` (inclusive). A diferencia de `compartidas` en useResumenMes
- * (que solo mira el mes actual), esto recorre mes a mes para que un saldo no
- * pagado siga reflejándose en los meses siguientes hasta que se registre el pago.
+ * Deuda por persona en compras compartidas del mes `ym`. Solo considera el
+ * mes que se está viendo (sin arrastrar saldos pendientes de meses anteriores).
  */
 export function useDeudasCompartidas(state, ym) {
   return useMemo(() => {
@@ -471,35 +469,23 @@ export function useDeudasCompartidas(state, ym) {
       const vpp = Number(c.valorPorPersona);
       if (!Number.isFinite(vpp) || vpp <= 0) continue;
 
-      const inicio = c.esSubscripcion
-        ? ((Array.isArray(c.periodos) && c.periodos[0]?.inicio) || c.mesInicio)
-        : c.mesInicio;
-      if (!inicio || inicio > ym) continue;
-
-      let m = inicio;
-      let guard = 0;
-      while (m <= ym && guard < 1200) {
-        const cuota = cuotaDelMes(c, m);
-        if (cuota) {
-          for (const pid of ids) {
-            if (!porPersona.has(pid)) porPersona.set(pid, { itemsPorMes: new Map(), totalDeuda: 0 });
-            const rec = porPersona.get(pid);
-            if (!rec.itemsPorMes.has(m)) rec.itemsPorMes.set(m, { items: [], total: 0 });
-            const bucket = rec.itemsPorMes.get(m);
-            bucket.items.push({ compra: c, numCuota: cuota.numCuota, valorPorPersona: vpp });
-            bucket.total += vpp;
-            rec.totalDeuda += vpp;
-          }
-        }
-        m = addMonths(m, 1);
-        guard++;
+      const cuota = cuotaDelMes(c, ym);
+      if (!cuota) continue;
+      for (const pid of ids) {
+        if (!porPersona.has(pid)) porPersona.set(pid, { itemsPorMes: new Map(), totalDeuda: 0 });
+        const rec = porPersona.get(pid);
+        if (!rec.itemsPorMes.has(ym)) rec.itemsPorMes.set(ym, { items: [], total: 0 });
+        const bucket = rec.itemsPorMes.get(ym);
+        bucket.items.push({ compra: c, numCuota: cuota.numCuota, valorPorPersona: vpp });
+        bucket.total += vpp;
+        rec.totalDeuda += vpp;
       }
     }
 
     const result = [];
     for (const [personaId, rec] of porPersona.entries()) {
       const liquidaciones = (state.liquidaciones || [])
-        .filter((l) => l.personaId === personaId && l.mesYM <= ym)
+        .filter((l) => l.personaId === personaId && l.mesYM === ym)
         .sort((a, b) => (a.mesYM + a.fecha).localeCompare(b.mesYM + b.fecha));
       const totalAbonado = liquidaciones.reduce((a, l) => a + (Number(l.monto) || 0), 0);
       const itemsPorMes = Array.from(rec.itemsPorMes.entries())
