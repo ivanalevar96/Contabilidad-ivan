@@ -1,4 +1,4 @@
-import { useResumenMes } from '../store';
+import { useResumenMes, useDeudasCompartidas } from '../store';
 import SegmentedTabs from './SegmentedTabs';
 import ResumenTab from './ResumenTab';
 import GastosTab from './GastosTab';
@@ -8,6 +8,7 @@ import { IconChart, IconUp, IconCard, IconUsers } from './icons';
 
 export default function MesView({ ym, f, tab, setTab, registerSignal }) {
   const resumen = useResumenMes(f.state, ym);
+  const deudas = useDeudasCompartidas(f.state, ym);
   const tarjetasActivas = f.state.tarjetas.filter((t) => !t.archivada);
 
   const numItems = Object.values(resumen.porTarjeta).reduce((a, b) => a + b.items.length, 0);
@@ -51,9 +52,9 @@ export default function MesView({ ym, f, tab, setTab, registerSignal }) {
         <div className="animate-fadein">
           <ComprasCompartidas
             compartidas={resumen.compartidas}
+            deudas={deudas}
             tarjetas={f.state.tarjetas}
             personas={f.state.personas || []}
-            liquidaciones={f.state.liquidaciones || []}
             ym={ym}
             updateCompra={f.updateCompra}
             addLiquidacion={f.addLiquidacion}

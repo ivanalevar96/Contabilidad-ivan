@@ -1,16 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Toaster, toast } from 'sonner';
 import { useAuth } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import MesView from './components/MesView';
-import AnnualView from './components/AnnualView';
-import TarjetasAdmin from './components/TarjetasAdmin';
-import Settings from './components/Settings';
 import { MesSkeleton } from './components/Skeleton';
 import { useFinanzas } from './store';
 import { currentYM, yearOf } from './utils/format';
+
+const MesView = lazy(() => import('./components/MesView'));
+const AnnualView = lazy(() => import('./components/AnnualView'));
+const TarjetasAdmin = lazy(() => import('./components/TarjetasAdmin'));
+const Settings = lazy(() => import('./components/Settings'));
 
 function useTheme() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
@@ -92,12 +93,14 @@ export default function App() {
               {f.loading ? (
                 <MesSkeleton />
               ) : (
-                <div key={view} className="animate-fadein">
-                  {view === 'mes'  && <MesView ym={ym} f={f} tab={mesTab} setTab={setMesTab} registerSignal={registerSignal} />}
-                  {view === 'anio' && <AnnualView year={year} f={f} onPickMonth={(m) => { setYM(m); setView('mes'); }} />}
-                  {view === 'conf' && <TarjetasAdmin f={f} />}
-                  {view === 'settings' && <Settings />}
-                </div>
+                <Suspense fallback={<MesSkeleton />}>
+                  <div key={view} className="animate-fadein">
+                    {view === 'mes'  && <MesView ym={ym} f={f} tab={mesTab} setTab={setMesTab} registerSignal={registerSignal} />}
+                    {view === 'anio' && <AnnualView year={year} f={f} onPickMonth={(m) => { setYM(m); setView('mes'); }} />}
+                    {view === 'conf' && <TarjetasAdmin f={f} />}
+                    {view === 'settings' && <Settings />}
+                  </div>
+                </Suspense>
               )}
             </div>
           </main>
