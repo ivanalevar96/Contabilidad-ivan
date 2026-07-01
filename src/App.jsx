@@ -23,7 +23,7 @@ function useTheme() {
 }
 
 export default function App() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, passwordRecovery, clearPasswordRecovery } = useAuth();
   const f = useFinanzas(user?.id);
   const { theme, toggle } = useTheme();
   const [view, setView] = useState('mes');
@@ -49,6 +49,14 @@ export default function App() {
     localStorage.setItem(key, '1');
     toast.success('Tu cuenta de Google fue vinculada a tu cuenta existente.');
   }, [user]);
+
+  useEffect(() => {
+    if (!passwordRecovery) return;
+    setView('settings');
+    setSidebarOpen(false);
+    toast.info('Ingresa tu nueva contraseña abajo para completar la recuperación.');
+    clearPasswordRecovery();
+  }, [passwordRecovery, clearPasswordRecovery]);
 
   const maxW = view === 'conf' || view === 'settings' ? 'max-w-[760px]' : 'max-w-[1080px]';
 

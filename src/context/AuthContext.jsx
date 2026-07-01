@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -14,13 +15,16 @@ export function AuthProvider({ children }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null);
+        if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const clearPasswordRecovery = () => setPasswordRecovery(false);
 
   const signUp = (email, password) =>
     supabase.auth.signUp({ email, password });
@@ -39,8 +43,14 @@ export function AuthProvider({ children }) {
   const updatePassword = (password) =>
     supabase.auth.updateUser({ password });
 
+  const resetPassword = (email) =>
+    supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, signInWithGoogle, updatePassword }}>
+    <AuthContext.Provider value={{
+      user, loading, signUp, signIn, signOut, signInWithGoogle,
+      updatePassword, resetPassword, passwordRecovery, clearPasswordRecovery,
+    }}>
       {children}
     </AuthContext.Provider>
   );
