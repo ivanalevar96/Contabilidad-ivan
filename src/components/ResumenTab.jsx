@@ -3,7 +3,7 @@ import { useTrailingMonths } from '../store';
 import KpiCard from './KpiCard';
 import Donut from './Donut';
 import Sparkline from './Sparkline';
-import { IconUp, IconDown, IconDollar, IconClock } from './icons';
+import { IconUp, IconDown, IconDollar, IconClock, IconPiggyBank } from './icons';
 
 function variacion(actual, anterior, gastoMode = false) {
   if (!anterior || anterior <= 0) return null;
@@ -42,17 +42,19 @@ export default function ResumenTab({ ym, f, resumen }) {
     .sort((a, b) => b.monto - a.monto)
     .slice(0, 5);
 
-  const ahorro6m = trailing.reduce((a, b) => a + b.ingresos - b.gastos, 0);
+  const saldoNeto6m = trailing.reduce((a, b) => a + b.ingresos - b.gastos - b.ahorros, 0);
   const gastoProm = trailing.reduce((a, b) => a + b.gastos, 0) / Math.max(1, trailing.length);
   const mesAlto = Math.max(...trailing.map((t) => t.gastos));
 
   return (
     <div className="flex flex-col gap-[var(--section-gap)]">
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-[14px]">
+      <section className="grid grid-cols-2 lg:grid-cols-5 gap-[14px]">
         <KpiCard label="Ingresos" icon={<IconUp size={15} />} value={resumen.ingresos}
           variation={prev && variacion(resumen.ingresos, prev.ingresos)} sub="Total del mes" />
         <KpiCard label="Gastos" icon={<IconDown size={15} />} value={resumen.gastos}
           variation={prev && variacion(resumen.gastos, prev.gastos, true)} sub="Total del mes" />
+        <KpiCard label="Ahorro" icon={<IconPiggyBank size={15} />} value={resumen.ahorros}
+          variation={prev && variacion(resumen.ahorros, prev.ahorros)} sub="Aportado este mes" />
         <KpiCard label="Saldo" icon={<IconDollar size={15} />} value={resumen.saldo} accent sub="Disponible este mes" />
         <KpiCard label="% usado" icon={<IconClock size={15} />} value={`${porcentaje.toFixed(1)}%`} sub="Gastos / Ingresos" />
       </section>
@@ -105,8 +107,8 @@ export default function ResumenTab({ ym, f, resumen }) {
           <Sparkline data={trailing} />
           <div className="mt-4 grid grid-cols-3 gap-2.5">
             <div className="rounded-[10px] bg-surface-2 p-3">
-              <div className="text-[10.5px] text-text-3 uppercase tracking-[0.05em]">Ahorro 6m</div>
-              <div className={`num font-semibold text-[13px] mt-1 ${ahorro6m < 0 ? 'text-negative' : 'text-positive'}`}>{fmt(ahorro6m)}</div>
+              <div className="text-[10.5px] text-text-3 uppercase tracking-[0.05em]">Saldo neto 6m</div>
+              <div className={`num font-semibold text-[13px] mt-1 ${saldoNeto6m < 0 ? 'text-negative' : 'text-positive'}`}>{fmt(saldoNeto6m)}</div>
             </div>
             <div className="rounded-[10px] bg-surface-2 p-3">
               <div className="text-[10.5px] text-text-3 uppercase tracking-[0.05em]">Gasto prom.</div>

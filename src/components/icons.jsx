@@ -47,6 +47,7 @@ export const IconPause = (p) => <Svg {...p} sw={1.8}><path d="M8 5v14M16 5v14" /
 export const IconRefresh = (p) => <Svg {...p} sw={1.8}><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" /></Svg>;
 export const IconMenu = (p) => <Svg {...p} sw={1.8}><path d="M3 6h18M3 12h18M3 18h18" /></Svg>;
 export const IconClose = (p) => <Svg {...p} sw={1.8}><path d="M6 6l12 12M18 6L6 18" /></Svg>;
+export const IconPiggyBank = (p) => <Svg {...p} sw={1.7}><path d="M19 9V6a2 2 0 0 0-2-2h-1.5a5 5 0 0 0-9 2H5a2 2 0 0 0-2 2c0 1.5 1 2 1 2v3c0 .5.3 1 1 1.3V17a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-1h4v1a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2.5c1-.5 2-1.6 2-3.5 0-1-.4-2-1-2.7V9z" /><circle cx="16" cy="10" r="0.6" fill="currentColor" stroke="none" /><path d="M2 11l2 .5" /></Svg>;
 export const IconSettings = (p) => <Svg {...p} sw={1.7}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></Svg>;
 
 export const IconGoogle = ({ size = 18 }) => (

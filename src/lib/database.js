@@ -98,6 +98,60 @@ function liquidacionToDb(userId, l) {
   };
 }
 
+function cuentaAhorroToDb(userId, c) {
+  return {
+    id: c.id,
+    user_id: userId,
+    nombre: c.nombre || '',
+    entidad: c.entidad || '',
+    tipo: c.tipo || 'otro',
+    color: c.color || '#64748b',
+    archivada: !!c.archivada,
+    automatico: !!c.automatico,
+    monto_automatico: Number(c.montoAutomatico) || 0,
+    mes_inicio_automatico: c.mesInicioAutomatico || null,
+    mes_fin_automatico: c.mesFinAutomatico || null,
+  };
+}
+
+function cuentaAhorroFromDb(row) {
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    entidad: row.entidad || '',
+    tipo: row.tipo || 'otro',
+    color: row.color || '#64748b',
+    archivada: !!row.archivada,
+    automatico: !!row.automatico,
+    montoAutomatico: row.monto_automatico || 0,
+    mesInicioAutomatico: row.mes_inicio_automatico || null,
+    mesFinAutomatico: row.mes_fin_automatico || null,
+  };
+}
+
+function aporteAhorroToDb(userId, a) {
+  return {
+    id: a.id,
+    user_id: userId,
+    cuenta_ahorro_id: a.cuentaAhorroId,
+    mes_ym: a.mesYM,
+    tipo: a.tipo || 'manual',
+    monto: Number(a.monto) || 0,
+    descripcion: a.descripcion || '',
+  };
+}
+
+function aporteAhorroFromDb(row) {
+  return {
+    id: row.id,
+    cuentaAhorroId: row.cuenta_ahorro_id,
+    mesYM: row.mes_ym,
+    tipo: row.tipo,
+    monto: row.monto,
+    descripcion: row.descripcion || '',
+  };
+}
+
 function pagoToDb(userId, p) {
   return {
     id: p.id,
@@ -122,13 +176,15 @@ function pagoFromDb(row) {
 // ─── Cargar todos los datos ───────────────────────────────────
 
 export async function loadAllData(userId) {
-  const [tarjetasRes, sueldosRes, comprasRes, pagosRes, personasRes, liquidacionesRes] = await Promise.all([
+  const [tarjetasRes, sueldosRes, comprasRes, pagosRes, personasRes, liquidacionesRes, cuentasAhorroRes, aportesAhorroRes] = await Promise.all([
     supabase.from('tarjetas').select('*').eq('user_id', userId),
     supabase.from('sueldos').select('*').eq('user_id', userId),
     supabase.from('compras').select('*').eq('user_id', userId),
     supabase.from('pagos_puntuales').select('*').eq('user_id', userId),
     supabase.from('personas').select('*').eq('user_id', userId).order('nombre'),
     supabase.from('liquidaciones').select('*').eq('user_id', userId),
+    supabase.from('cuentas_ahorro').select('*').eq('user_id', userId),
+    supabase.from('aportes_ahorro').select('*').eq('user_id', userId),
   ]);
 
   // Tarjetas
@@ -170,7 +226,15 @@ export async function loadAllData(userId) {
     ? []
     : (liquidacionesRes.data || []).map(liquidacionFromDb);
 
-  return { tarjetas, sueldos, compras, pagosPuntuales, personas, liquidaciones };
+  // Ahorros: mismo fallback suave mientras se corre la migración en producción.
+  const cuentasAhorro = cuentasAhorroRes.error
+    ? []
+    : (cuentasAhorroRes.data || []).map(cuentaAhorroFromDb);
+  const aportesAhorro = aportesAhorroRes.error
+    ? []
+    : (aportesAhorroRes.data || []).map(aporteAhorroFromDb);
+
+  return { tarjetas, sueldos, compras, pagosPuntuales, personas, liquidaciones, cuentasAhorro, aportesAhorro };
 }
 
 // ─── Tarjetas ─────────────────────────────────────────────────
@@ -308,6 +372,76 @@ export async function saveLiquidacion(userId, l) {
 export async function deleteLiquidacion(userId, id) {
   const { error } = await supabase
     .from('liquidaciones')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+// ─── Cuentas de ahorro ──────────────────────────────────────────
+
+export async function saveCuentaAhorro(userId, c) {
+  const { error } = await supabase.from('cuentas_ahorro').upsert(cuentaAhorroToDb(userId, c));
+  if (error) throw error;
+}
+
+export async function updateCuentaAhorroDb(userId, id, patch) {
+  const updates = {};
+  if (patch.nombre != null) updates.nombre = patch.nombre;
+  if (patch.entidad != null) updates.entidad = patch.entidad;
+  if (patch.tipo != null) updates.tipo = patch.tipo;
+  if (patch.color != null) updates.color = patch.color;
+  if (patch.archivada != null) updates.archivada = !!patch.archivada;
+  if (patch.automatico != null) updates.automatico = !!patch.automatico;
+  if (patch.montoAutomatico != null) updates.monto_automatico = Number(patch.montoAutomatico) || 0;
+  if (patch.mesInicioAutomatico !== undefined) updates.mes_inicio_automatico = patch.mesInicioAutomatico;
+  if (patch.mesFinAutomatico !== undefined) updates.mes_fin_automatico = patch.mesFinAutomatico;
+
+  const { error } = await supabase
+    .from('cuentas_ahorro')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function archiveCuentaAhorroDb(userId, id) {
+  const { error } = await supabase
+    .from('cuentas_ahorro')
+    .update({ archivada: true })
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function unarchiveCuentaAhorroDb(userId, id) {
+  const { error } = await supabase
+    .from('cuentas_ahorro')
+    .update({ archivada: false })
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function deleteCuentaAhorro(userId, id) {
+  const { error } = await supabase
+    .from('cuentas_ahorro')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+// ─── Aportes de ahorro ──────────────────────────────────────────
+
+export async function saveAporteAhorro(userId, a) {
+  const { error } = await supabase.from('aportes_ahorro').upsert(aporteAhorroToDb(userId, a));
+  if (error) throw error;
+}
+
+export async function deleteAporteAhorro(userId, id) {
+  const { error } = await supabase
+    .from('aportes_ahorro')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);

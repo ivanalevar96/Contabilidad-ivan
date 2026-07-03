@@ -9,6 +9,8 @@ import {
   savePagoPuntual, deletePagoPuntual,
   savePersona, deletePersona,
   saveLiquidacion, deleteLiquidacion,
+  saveCuentaAhorro, updateCuentaAhorroDb, archiveCuentaAhorroDb, unarchiveCuentaAhorroDb, deleteCuentaAhorro,
+  saveAporteAhorro, deleteAporteAhorro,
 } from './lib/database';
 import { supabase } from './lib/supabase';
 
@@ -21,6 +23,9 @@ import { supabase } from './lib/supabase';
  *              cantCuotas, mesInicio, valorCuota, esCompartida,
  *              divididaEntre, valorPorPersona, revisado }]
  * pagosPuntuales: [{ id, mesYM, tarjetaId, descripcion, monto }]
+ * cuentasAhorro: [{ id, nombre, entidad, tipo, color, archivada,
+ *                    automatico, montoAutomatico, mesInicioAutomatico, mesFinAutomatico }]
+ * aportesAhorro: [{ id, cuentaAhorroId, mesYM, tipo: 'manual' | 'ajuste', monto, descripcion }]
  */
 
 const empty = () => ({
@@ -30,6 +35,8 @@ const empty = () => ({
   pagosPuntuales: [],
   personas: [],
   liquidaciones: [],
+  cuentasAhorro: [],
+  aportesAhorro: [],
 });
 
 /**
@@ -86,6 +93,14 @@ export function cuotaDelMes(compra, ym) {
   // al mes de corte dejan de mostrarse. El total de cuotas original se conserva.
   if (compra.mesFinAnticipado && ym > compra.mesFinAnticipado) return null;
   return { numCuota: n, valorCuota: Number(compra.valorCuota) || 0 };
+}
+
+/** Aporte automático de una cuenta de ahorro para el mes `ym`, o null si no aplica. */
+export function aporteAutomaticoDelMes(cuenta, ym) {
+  if (!cuenta?.automatico || !cuenta.mesInicioAutomatico) return null;
+  if (monthsBetween(cuenta.mesInicioAutomatico, ym) < 0) return null;
+  if (cuenta.mesFinAutomatico && monthsBetween(ym, cuenta.mesFinAutomatico) < 0) return null;
+  return Number(cuenta.montoAutomatico) || 0;
 }
 
 export function useFinanzas(userId) {
@@ -323,6 +338,60 @@ export function useFinanzas(userId) {
     sync(() => deleteLiquidacion(userIdRef.current, id));
   }, [sync]);
 
+  // ---------- Cuentas de ahorro ----------
+  const addCuentaAhorro = useCallback((c) => {
+    const nueva = {
+      id: crypto.randomUUID(),
+      color: '#64748b',
+      tipo: 'otro',
+      entidad: '',
+      archivada: false,
+      automatico: false,
+      montoAutomatico: 0,
+      mesInicioAutomatico: null,
+      mesFinAutomatico: null,
+      ...c,
+    };
+    setState((s) => ({ ...s, cuentasAhorro: [...s.cuentasAhorro, nueva] }));
+    sync(() => saveCuentaAhorro(userIdRef.current, nueva));
+  }, [sync]);
+
+  const updateCuentaAhorro = useCallback((id, patch) => {
+    setState((s) => ({ ...s, cuentasAhorro: s.cuentasAhorro.map((c) => c.id === id ? { ...c, ...patch } : c) }));
+    sync(() => updateCuentaAhorroDb(userIdRef.current, id, patch));
+  }, [sync]);
+
+  const archiveCuentaAhorro = useCallback((id) => {
+    setState((s) => ({ ...s, cuentasAhorro: s.cuentasAhorro.map((c) => c.id === id ? { ...c, archivada: true } : c) }));
+    sync(() => archiveCuentaAhorroDb(userIdRef.current, id));
+  }, [sync]);
+
+  const unarchiveCuentaAhorro = useCallback((id) => {
+    setState((s) => ({ ...s, cuentasAhorro: s.cuentasAhorro.map((c) => c.id === id ? { ...c, archivada: false } : c) }));
+    sync(() => unarchiveCuentaAhorroDb(userIdRef.current, id));
+  }, [sync]);
+
+  const removeCuentaAhorro = useCallback((id) => {
+    setState((s) => ({
+      ...s,
+      cuentasAhorro: s.cuentasAhorro.filter((c) => c.id !== id),
+      aportesAhorro: s.aportesAhorro.filter((a) => a.cuentaAhorroId !== id),
+    }));
+    sync(() => deleteCuentaAhorro(userIdRef.current, id));
+  }, [sync]);
+
+  // ---------- Aportes de ahorro ----------
+  const addAporteAhorro = useCallback((a) => {
+    const nuevo = { id: crypto.randomUUID(), tipo: 'manual', descripcion: '', ...a };
+    setState((s) => ({ ...s, aportesAhorro: [...(s.aportesAhorro || []), nuevo] }));
+    sync(() => saveAporteAhorro(userIdRef.current, nuevo));
+  }, [sync]);
+
+  const removeAporteAhorro = useCallback((id) => {
+    setState((s) => ({ ...s, aportesAhorro: (s.aportesAhorro || []).filter((a) => a.id !== id) }));
+    sync(() => deleteAporteAhorro(userIdRef.current, id));
+  }, [sync]);
+
   // ---------- Reset ----------
   const resetAll = useCallback(async () => {
     if (!userIdRef.current) return;
@@ -402,8 +471,22 @@ export function useFinanzas(userId) {
     addPagoPuntual, removePagoPuntual,
     addPersona, updatePersona, removePersona,
     addLiquidacion, removeLiquidacion,
+    addCuentaAhorro, updateCuentaAhorro, archiveCuentaAhorro, unarchiveCuentaAhorro, removeCuentaAhorro,
+    addAporteAhorro, removeAporteAhorro,
     resetAll, importJson,
   };
+}
+
+/** Total aportado a ahorros (automático + manual, sin ajustes) en el mes `ym`. */
+function ahorrosDelMes(state, ym) {
+  let total = 0;
+  for (const c of state.cuentasAhorro || []) {
+    total += aporteAutomaticoDelMes(c, ym) || 0;
+  }
+  for (const a of state.aportesAhorro || []) {
+    if (a.tipo === 'manual' && a.mesYM === ym) total += Number(a.monto) || 0;
+  }
+  return total;
 }
 
 /** Calcula agregados para un mes */
@@ -440,7 +523,8 @@ export function useResumenMes(state, ym) {
     }
 
     const gastos = Object.values(porTarjeta).reduce((a, b) => a + b.total, 0);
-    const saldo = ingresos - gastos;
+    const ahorros = ahorrosDelMes(state, ym);
+    const saldo = ingresos - gastos - ahorros;
 
     const compartidas = state.compras
       .map((c) => {
@@ -450,7 +534,55 @@ export function useResumenMes(state, ym) {
       })
       .filter(Boolean);
 
-    return { ingresos, ingresoBase, ingresoExtra, gastos, saldo, porTarjeta, compartidas, sueldoObj };
+    return { ingresos, ingresoBase, ingresoExtra, gastos, ahorros, saldo, porTarjeta, compartidas, sueldoObj };
+  }, [state, ym]);
+}
+
+/**
+ * Detalle de aportes y saldo acumulado por cuenta de ahorro, hasta el mes `ym`.
+ * Calcado de `useDeudasCompartidas`: acumula a través de los meses en vez de
+ * mirar solo el mes actual.
+ */
+export function useResumenAhorros(state, ym) {
+  return useMemo(() => {
+    const cuentas = state.cuentasAhorro || [];
+    const aportes = state.aportesAhorro || [];
+
+    const result = cuentas.map((cuenta) => {
+      const auto = aporteAutomaticoDelMes(cuenta, ym) || 0;
+      const aportesDelMes = aportes.filter((a) => a.cuentaAhorroId === cuenta.id && a.mesYM === ym);
+      const manualDelMes = aportesDelMes
+        .filter((a) => a.tipo === 'manual')
+        .reduce((acc, a) => acc + (Number(a.monto) || 0), 0);
+      const aporteEsteMes = auto + manualDelMes;
+
+      // Saldo acumulado por aportes automáticos: suma de montoAutomatico desde
+      // mesInicioAutomatico hasta ym (o hasta mesFinAutomatico si ya terminó).
+      let acumuladoAutomatico = 0;
+      if (cuenta.automatico && cuenta.mesInicioAutomatico && monthsBetween(cuenta.mesInicioAutomatico, ym) >= 0) {
+        const limiteYm = cuenta.mesFinAutomatico && monthsBetween(ym, cuenta.mesFinAutomatico) < 0
+          ? cuenta.mesFinAutomatico
+          : ym;
+        const nMeses = monthsBetween(cuenta.mesInicioAutomatico, limiteYm) + 1;
+        acumuladoAutomatico = nMeses * (Number(cuenta.montoAutomatico) || 0);
+      }
+
+      const historial = aportes
+        .filter((a) => a.cuentaAhorroId === cuenta.id)
+        .sort((a, b) => b.mesYM.localeCompare(a.mesYM));
+      const totalManualYAjustes = historial
+        .filter((a) => a.mesYM <= ym)
+        .reduce((acc, a) => acc + (Number(a.monto) || 0), 0);
+
+      const saldoAcumulado = acumuladoAutomatico + totalManualYAjustes;
+
+      return { cuenta, aporteEsteMes, aportesDelMes, saldoAcumulado, historial };
+    });
+
+    return result.sort((a, b) => {
+      if (a.cuenta.archivada !== b.cuenta.archivada) return a.cuenta.archivada ? 1 : -1;
+      return b.saldoAcumulado - a.saldoAcumulado;
+    });
   }, [state, ym]);
 }
 
@@ -522,7 +654,8 @@ export function useTrailingMonths(state, ym, n = 6) {
       for (const p of state.pagosPuntuales) {
         if (p.mesYM === k) gastos += Number(p.monto) || 0;
       }
-      out.push({ ym: k, ingresos, gastos });
+      const ahorros = ahorrosDelMes(state, k);
+      out.push({ ym: k, ingresos, gastos, ahorros });
     }
     return out;
   }, [state, ym, n]);
@@ -547,13 +680,15 @@ export function useResumenAnual(state, year) {
       for (const p of state.pagosPuntuales) {
         if (p.mesYM === ym) gastos += Number(p.monto) || 0;
       }
-      meses.push({ ym, ingresos, gastos, saldo: ingresos - gastos });
+      const ahorros = ahorrosDelMes(state, ym);
+      meses.push({ ym, ingresos, gastos, ahorros, saldo: ingresos - gastos - ahorros });
     }
     const tot = meses.reduce((a, b) => ({
       ingresos: a.ingresos + b.ingresos,
       gastos: a.gastos + b.gastos,
+      ahorros: a.ahorros + b.ahorros,
       saldo: a.saldo + b.saldo,
-    }), { ingresos: 0, gastos: 0, saldo: 0 });
+    }), { ingresos: 0, gastos: 0, ahorros: 0, saldo: 0 });
     return { meses, total: tot };
   }, [state, year]);
 }
